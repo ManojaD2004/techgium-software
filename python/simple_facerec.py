@@ -15,6 +15,7 @@ class SimpleFacerec:
         print(f"{len(image_files)} encoding images found.")
 
         for img_path in image_files:
+            print(img_path)
             img = cv2.imread(img_path)
             if img is None:
                 print("Could not read image:", img_path)

@@ -67,7 +67,7 @@ def main():
     # Initialize face recognition and load known face encodings.
     sfr = SimpleFacerec()
     sfr.load_encoding_images("images/")  # Folder with known face images
-
+    print(sfr)
     # Use your mobile stream URL (try appending '/video' if needed)
     stream_url = "http://192.168.1.7:4747/video"
     try:
