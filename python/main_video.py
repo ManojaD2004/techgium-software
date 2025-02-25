@@ -69,7 +69,7 @@ def main():
     sfr.load_encoding_images("images/")  # Folder with known face images
 
     # Use your mobile stream URL (try appending '/video' if needed)
-    stream_url = "http://192.168.1.3:4747/video"
+    stream_url = "http://192.168.1.7:4747/video"
     try:
         vs = ThreadedVideoStream(stream_url).start()
     except Exception as e:

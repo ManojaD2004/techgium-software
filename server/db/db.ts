@@ -261,13 +261,6 @@ class UserDBv1 extends DB {
       let pClient;
       try {
         pClient = await this.connect();
-        const shortuuid = v4().slice(0, 6);
-        const userName =
-          profileData.firstName.toLowerCase().replace(/\s/g, "-") +
-          "-" +
-          profileData.lastName.toLowerCase().replace(/\s/g, "-") +
-          "-" +
-          shortuuid;
         await pClient.query("BEGIN");
         const res = await pClient.query(
           `
@@ -277,7 +270,7 @@ class UserDBv1 extends DB {
           $3::varchar, $4::varchar, $5::user_type,
           $6::varchar, $7::varchar) RETURNING id;`,
           [
-            userName,
+            profileData.userName,
             profileData.firstName,
             profileData.lastName,
             imgURL,
@@ -481,21 +474,11 @@ class TrackerDBv1 extends DB {
             c."id" as "cameraId",
             r."room_name" as "roomName",
             r."id" as "roomId",
-            r."max_head_count" as "maxHeadCount",
-            a."user_name" as "userName", 
-            a."first_name" as "firstName",
-            a."last_name" as "lastName,
-            a."img_URL" as "imgURL",
-            a."phone_no" as "phoneNo"
           FROM 
             "cameras" as c 
-          INNER JOIN 
+          LEFT JOIN 
             "rooms" as r
-            ON c."room_id" = r."id"
-          INNER JOIN 
-            "users" as a ON
-            r."created_by" = a."id" AND
-            a."type" = 'admin'`
+            ON c."room_id" = r."id"`
         );
         const cameraData: Camera[] = res.rows;
         return cameraData;
@@ -929,8 +912,8 @@ class ModelDBv1 extends DB {
           "users" as e
          ON e."id" = me."employee_id"
          INNER JOIN 
-          "model_employee_img" as mei
-         ON mei."model_employee_id" = me."id"
+          "employee_img" as mei
+         ON mei."employee_id" = me."id"
          WHERE me."model_id" = $1::int
          GROUP BY 
           me."employee_id"
@@ -954,7 +937,7 @@ class ModelDBv1 extends DB {
       }
     });
   }
-  async addModelEmployeeImgPath(modelEmployeeId: number, imgPath: string) {
+  async addModelEmployeeImgPath(employeeId: number, imgPath: string) {
     return await this.retryQuery("addModelEmployeeImgPath", async () => {
       let pClient;
       try {
@@ -962,10 +945,10 @@ class ModelDBv1 extends DB {
         await pClient.query("BEGIN");
         const res = await pClient.query(
           `
-         INSERT INTO "model_employee_img" ("model_employee_id", 
+         INSERT INTO "employee_img" ("employee_id", 
          "img_path") 
          VALUES ($1::int, $2::varchar) RETURNING id;`,
-          [modelEmployeeId, imgPath]
+          [employeeId, imgPath]
         );
         if (res.rowCount !== 1) {
           await pClient.query("ROLLBACK");
@@ -993,7 +976,7 @@ class ModelDBv1 extends DB {
       }
     });
   }
-  async getAssignModelEmployeeImg(modelEmpId: number) {
+  async getAssignModelEmployeeImg(empId: number) {
     return await this.retryQuery("getAssignModelEmployeeImg", async () => {
       let pClient;
       try {
@@ -1004,12 +987,12 @@ class ModelDBv1 extends DB {
           mei."img_path" as "imgPath",
           mei."id",
           mei."created_at" as "createdAt"
-         FROM "model_employee_img" as mei
+         FROM "employee_img" as mei
          WHERE 
-          mei."model_employee_id" = $1::int
+          mei."employee_id" = $1::int
          ORDER BY 
           mei."created_at";`,
-          [modelEmpId]
+          [empId]
         );
         const modelData: ModelEmployeeImg[] = res.rows;
         return modelData;

@@ -28,6 +28,7 @@ type GetModelEmployee = EmployeeProfile & {
 
 type AdminProfile = EmployeeProfile & {
   password: string;
+  userName: string;
 };
 
 type Notification = {
@@ -49,6 +50,7 @@ const employeeProfileSchema = z.object({
 const adminProfileSchema = z.object({
   firstName: z.string(),
   lastName: z.string(),
+  userName: z.string(),
   phoneNumber: z.string(),
   password: z.string(),
 });

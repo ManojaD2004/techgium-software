@@ -53,9 +53,8 @@ ADD FOREIGN KEY ("created_by") REFERENCES "users" ("id");
 CREATE TABLE
   "model_room" (
     "id" SERIAL PRIMARY KEY,
-    "model_id" int NOT NULL,
-    "room_id" int NOT NULL,
-    UNIQUE ("model_id", "room_id")
+    "room_id" int UNIQUE NOT NULL,
+    "model_id" int NOT NULL
   );
 
 ALTER TABLE "model_room"
@@ -79,15 +78,16 @@ ALTER TABLE "model_employee"
 ADD FOREIGN KEY ("employee_id") REFERENCES "users" ("id");
 
 CREATE TABLE
-  "model_employee_img" (
+  "employee_img" (
     "id" SERIAL PRIMARY KEY,
-    "model_employee_id" int NOT NULL,
+    "employee_id" int NOT NULL,
     "img_path" varchar NOT NULL,
-    "created_at" timestamptz DEFAULT (CURRENT_TIMESTAMP)
+    "created_at" timestamptz DEFAULT (CURRENT_TIMESTAMP),
+    UNIQUE ("employee_id", "img_path")
   );
 
 ALTER TABLE "model_employee_data"
-ADD FOREIGN KEY ("model_employee_id") REFERENCES "model_employee" ("id") ON DELETE CASCADE;
+ADD FOREIGN KEY ("employee_id") REFERENCES "users" ("id") ON DELETE CASCADE;
 
 CREATE TABLE
   "employee_data" (

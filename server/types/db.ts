@@ -10,7 +10,7 @@ type AdminUser = {
   phoneNo: string;
 };
 
-type Room = AdminUser  & {
+type Room = AdminUser & {
   roomName: string;
   roomId: number;
   createdAt: string;
@@ -19,10 +19,12 @@ type Room = AdminUser  & {
   modelName: string | null;
 };
 
-type Camera = Room & {
+type Camera = {
+  roomId: number | null;
+  roomName: string | null;
   cameraId: number;
   cameraName: string;
-}
+};
 
 type Model = AdminUser & {
   modelId: number;
@@ -34,6 +36,6 @@ type ModelEmployeeImg = {
   createdAt: string;
   id: number;
   imgPath: string;
-}
+};
 
 export type { Ping, Room, Camera, Model, ModelEmployeeImg };
