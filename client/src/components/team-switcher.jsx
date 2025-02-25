@@ -13,7 +13,7 @@ const teams = [
   {
     name: "RealSync Ai",
     logo: GalleryVerticalEnd,
-    plan: "Ai assitant",
+    plan: "Ai assistant",
   },
 ]
 
