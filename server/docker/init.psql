@@ -5,13 +5,12 @@ CREATE TABLE
     "id" SERIAL PRIMARY KEY,
     "uuid" uuid NOT NULL DEFAULT (gen_random_uuid ()),
     "user_name" varchar UNIQUE NOT NULL,
-    "clerk_id" varchar UNIQUE NOT NULL,
+    "clerk_id" varchar UNIQUE,
     "first_name" varchar NOT NULL,
     "last_name" varchar NOT NULL,
     "img_URL" varchar NOT NULL,
     "type" user_type NOT NULL,
     "created_at" timestamptz DEFAULT (CURRENT_TIMESTAMP),
-    "email_id" varchar UNIQUE NOT NULL,
     "phone_no" varchar UNIQUE NOT NULL
   );
 
@@ -25,38 +24,77 @@ CREATE TABLE
 CREATE TABLE
   "rooms" (
     "id" SERIAL PRIMARY KEY,
-    "room_name" varchar NOT NULL,
+    "room_name" varchar UNIQUE NOT NULL,
     "created_by" int NOT NULL,
-    "max_head_count" int DEFAULT 10
+    "max_head_count" int DEFAULT 9999,
+    "created_at" timestamptz DEFAULT (CURRENT_TIMESTAMP)
   );
 
 CREATE TABLE
   "cameras" (
     "id" SERIAL PRIMARY KEY,
-    "camera_name" varchar NOT NULL,
-    "room_id" int NOT NULL
+    "camera_name" varchar UNIQUE NOT NULL,
+    "room_id" int NOT NULL,
+    "created_at" timestamptz DEFAULT (CURRENT_TIMESTAMP)
   );
 
 CREATE TABLE
   "model" (
     "id" SERIAL PRIMARY KEY,
     "model_name" varchar UNIQUE NOT NULL,
-    "room_id" int NOT NULL
+    "created_by" int NOT NULL,
+    "created_at" timestamptz DEFAULT (CURRENT_TIMESTAMP)
   );
+
+ALTER TABLE "model"
+ADD FOREIGN KEY ("created_by") REFERENCES "users" ("id");
+
+CREATE TABLE
+  "model_room" (
+    "id" SERIAL PRIMARY KEY,
+    "model_id" int NOT NULL,
+    "room_id" int NOT NULL,
+    UNIQUE ("model_id", "room_id")
+  );
+
+ALTER TABLE "model_room"
+ADD FOREIGN KEY ("room_id") REFERENCES "rooms" ("id") ON DELETE CASCADE;
+
+ALTER TABLE "model_room"
+ADD FOREIGN KEY ("model_id") REFERENCES "model" ("id") ON DELETE CASCADE;
 
 CREATE TABLE
   "model_employee" (
     "id" SERIAL PRIMARY KEY,
     "model_id" int NOT NULL,
-    "employee_id" int NOT NULL
+    "employee_id" int NOT NULL,
+    UNIQUE ("model_id", "employee_id")
   );
+
+ALTER TABLE "model_employee"
+ADD FOREIGN KEY ("model_id") REFERENCES "model" ("id") ON DELETE CASCADE;
+
+ALTER TABLE "model_employee"
+ADD FOREIGN KEY ("employee_id") REFERENCES "users" ("id");
+
+CREATE TABLE
+  "model_employee_img" (
+    "id" SERIAL PRIMARY KEY,
+    "model_employee_id" int NOT NULL,
+    "img_path" varchar NOT NULL,
+    "created_at" timestamptz DEFAULT (CURRENT_TIMESTAMP)
+  );
+
+ALTER TABLE "model_employee_data"
+ADD FOREIGN KEY ("model_employee_id") REFERENCES "model_employee" ("id") ON DELETE CASCADE;
 
 CREATE TABLE
   "employee_data" (
     "id" SERIAL PRIMARY KEY,
     "employee_id" int NOT NULL,
     "room_id" int NOT NULL,
-    "date" timestamptz DEFAULT (CURRENT_TIMESTAMP),
+    "date" DATE NOT NULL DEFAULT CURRENT_DATE,
+    "created_at" timestamptz DEFAULT (CURRENT_TIMESTAMP),
     "total_hours_spent" numeric DEFAULT (0)
   );
 
@@ -67,8 +105,6 @@ CREATE TABLE
     "message" TEXT NOT NULL,
     "action" TEXT
   );
-
-CREATE UNIQUE INDEX ON "model_employee" ("model_id", "employee_id");
 
 COMMENT ON COLUMN "rooms"."created_by" IS 'Only possible by admin user type';
 
@@ -87,19 +123,10 @@ ALTER TABLE "rooms"
 ADD FOREIGN KEY ("created_by") REFERENCES "users" ("id");
 
 ALTER TABLE "cameras"
-ADD FOREIGN KEY ("room_id") REFERENCES "rooms" ("id");
-
-ALTER TABLE "model"
-ADD FOREIGN KEY ("room_id") REFERENCES "rooms" ("id");
-
-ALTER TABLE "model_employee"
-ADD FOREIGN KEY ("model_id") REFERENCES "model" ("id");
-
-ALTER TABLE "model_employee"
-ADD FOREIGN KEY ("employee_id") REFERENCES "users" ("id");
+ADD FOREIGN KEY ("room_id") REFERENCES "rooms" ("id") ON DELETE CASCADE;
 
 ALTER TABLE "employee_data"
-ADD FOREIGN KEY ("room_id") REFERENCES "rooms" ("id");
+ADD FOREIGN KEY ("room_id") REFERENCES "rooms" ("id") ON DELETE CASCADE;
 
 ALTER TABLE "employee_data"
 ADD FOREIGN KEY ("employee_id") REFERENCES "users" ("id");

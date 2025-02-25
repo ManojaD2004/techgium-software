@@ -1,7 +1,7 @@
 import chalk from "chalk";
 import { Pool, PoolClient } from "pg";
 import { v4 } from "uuid";
-import { Ping } from "../types/db";
+import { Camera, Ping, Room } from "../types/db";
 import { getRandomInteger } from "../helpers/randomNumber";
 import { dbConfigs } from "../configs/configs";
 import ShortUniqueId from "short-unique-id";
@@ -159,9 +159,8 @@ class UserDBv1 extends DB {
   // Employee User
   async createEmployeeUser(
     profileData: UserProfile,
-    userId: string,
-    imgURL: string,
-    emailId: string
+    clerkId: string,
+    imgURL: string
   ) {
     return await this.retryQuery("createEmployeeUser", async () => {
       let pClient;
@@ -178,19 +177,18 @@ class UserDBv1 extends DB {
         const res = await pClient.query(
           `
           INSERT INTO "users" ("user_name", "clerk_id", "first_name",
-          "last_name", "img_URL", "type", "email_id", "phone_no") 
+          "last_name", "img_URL", "type", "phone_no") 
           VALUES ($1::varchar, $2::varchar,
           $3::varchar, $4::varchar, $5::varchar, $6::user_type,
-          $7::varchar, $8::varchar) RETURNING id;`,
+          $7::varchar) RETURNING id;`,
           [
             userName,
-            userId,
+            clerkId,
             profileData.firstName,
             profileData.lastName,
             imgURL,
             "employee",
             profileData.phoneNumber,
-            emailId,
           ]
         );
         if (res.rowCount !== 1) {
@@ -221,12 +219,7 @@ class UserDBv1 extends DB {
     });
   }
   // Admin User
-  async createAdminUser(
-    profileData: UserProfile,
-    userId: string,
-    imgURL: string,
-    emailId: string
-  ) {
+  async createAdminUser(profileData: UserProfile, imgURL: string) {
     return await this.retryQuery("createAdminUser", async () => {
       let pClient;
       try {
@@ -241,20 +234,18 @@ class UserDBv1 extends DB {
         await pClient.query("BEGIN");
         const res = await pClient.query(
           `
-          INSERT INTO "users" ("user_name", "clerk_id", "first_name",
-          "last_name", "img_URL", "type", "email_id", "phone_no") 
+          INSERT INTO "users" ("user_name", "first_name",
+          "last_name", "img_URL", "type", "phone_no") 
           VALUES ($1::varchar, $2::varchar,
-          $3::varchar, $4::varchar, $5::varchar, $6::user_type,
-          $7::varchar, $8::varchar) RETURNING id;`,
+          $3::varchar, $4::varchar, $5::user_type,
+          $6::varchar) RETURNING id;`,
           [
             userName,
-            userId,
             profileData.firstName,
             profileData.lastName,
             imgURL,
             "admin",
             profileData.phoneNumber,
-            emailId,
           ]
         );
         if (res.rowCount !== 1) {
@@ -287,7 +278,8 @@ class UserDBv1 extends DB {
 }
 
 class TrackerDBv1 extends DB {
-  async createRoom(userId: number, roomName: string) {
+  // Room and Camera operations
+  async createRoom(roomName: string, userId: number) {
     return await this.retryQuery("createRoom", async () => {
       let pClient;
       try {
@@ -319,8 +311,8 @@ class TrackerDBv1 extends DB {
       }
     });
   }
-  async assignCamera(cameraName: string, roomId: number) {
-    return await this.retryQuery("assignCamera", async () => {
+  async createAssignCamera(cameraName: string, roomId: number) {
+    return await this.retryQuery("createAssignCamera", async () => {
       let pClient;
       try {
         pClient = await this.connect();
@@ -337,6 +329,461 @@ class TrackerDBv1 extends DB {
           cameraId: res.rows[0].id as number,
         };
         return cameraData;
+      } catch (error: any) {
+        console.log(
+          chalk.red("PostgresSQL Error: "),
+          error?.message,
+          error?.code
+        );
+        return null;
+      } finally {
+        if (pClient) {
+          this.release(pClient);
+        }
+      }
+    });
+  }
+  async getRooms() {
+    return await this.retryQuery("getRooms", async () => {
+      let pClient;
+      try {
+        pClient = await this.connect();
+        const res = await pClient.query(
+          `
+          SELECT 
+            r."room_name" as "roomName",
+            r."id" as "roomId",
+            r."max_head_count" as "maxHeadCount",
+            a."user_name" as "userName", 
+            a."first_name" as "firstName",
+            a."last_name" as "lastName,
+            a."img_URL" as "imgURL",
+            a."phone_no" as "phoneNo"
+          FROM "rooms" as r
+          INNER JOIN "users" a ON
+          r."created_by" = a."id" AND
+          a."type" = 'admin'`
+        );
+        const roomData: Room[] = res.rows;
+        return roomData;
+      } catch (error: any) {
+        console.log(
+          chalk.red("PostgresSQL Error: "),
+          error?.message,
+          error?.code
+        );
+        return null;
+      } finally {
+        if (pClient) {
+          this.release(pClient);
+        }
+      }
+    });
+  }
+  async getAssignedCameras() {
+    return await this.retryQuery("getAssignedCameras", async () => {
+      let pClient;
+      try {
+        pClient = await this.connect();
+        const res = await pClient.query(
+          `
+          SELECT 
+            c."camera_name" as "cameraName",
+            c."id" as "cameraId",
+            r."room_name" as "roomName",
+            r."id" as "roomId",
+            r."max_head_count" as "maxHeadCount",
+            a."user_name" as "userName", 
+            a."first_name" as "firstName",
+            a."last_name" as "lastName,
+            a."img_URL" as "imgURL",
+            a."phone_no" as "phoneNo"
+          FROM 
+            "cameras" as c 
+          INNER JOIN 
+            "rooms" as r
+            ON c."room_id" = r."id"
+          INNER JOIN 
+            "users" as a ON
+            r."created_by" = a."id" AND
+            a."type" = 'admin'`
+        );
+        const cameraData: Camera[] = res.rows;
+        return cameraData;
+      } catch (error: any) {
+        console.log(
+          chalk.red("PostgresSQL Error: "),
+          error?.message,
+          error?.code
+        );
+        return null;
+      } finally {
+        if (pClient) {
+          this.release(pClient);
+        }
+      }
+    });
+  }
+  async updateRoom(maxHeadCount: number, roomName: string, roomId: number) {
+    return await this.retryQuery("updateRoom", async () => {
+      let pClient;
+      try {
+        pClient = await this.connect();
+        const res = await pClient.query(
+          `
+          UPDATE "rooms" as r
+          SET
+            r."max_head_count" = $1::int,
+            r."room_name" = $2::varchar
+         WHERE r."id" = $3::int RETURNING id;`,
+          [maxHeadCount, roomName, roomId]
+        );
+        if (res.rowCount !== 1) {
+          return -1;
+        }
+        const roomData = {
+          roomId: res.rows[0].id as number,
+        };
+        return roomData;
+      } catch (error: any) {
+        console.log(
+          chalk.red("PostgresSQL Error: "),
+          error?.message,
+          error?.code
+        );
+        return null;
+      } finally {
+        if (pClient) {
+          this.release(pClient);
+        }
+      }
+    });
+  }
+  async updateAssignCamera(
+    cameraName: number,
+    roomId: number,
+    cameraId: number
+  ) {
+    return await this.retryQuery("updateAssignCamera", async () => {
+      let pClient;
+      try {
+        pClient = await this.connect();
+        const res = await pClient.query(
+          `
+          UPDATE "cameras" as c
+          SET
+            c."camera_name" = $1::varchar,
+            c."room_id" = $2::int
+         WHERE c."id" = $3::int RETURNING id;`,
+          [cameraName, roomId, cameraId]
+        );
+        if (res.rowCount !== 1) {
+          return -1;
+        }
+        const cameraData = {
+          cameraId: res.rows[0].id as number,
+        };
+        return cameraData;
+      } catch (error: any) {
+        console.log(
+          chalk.red("PostgresSQL Error: "),
+          error?.message,
+          error?.code
+        );
+        return null;
+      } finally {
+        if (pClient) {
+          this.release(pClient);
+        }
+      }
+    });
+  }
+  async deleteRoom(roomId: number) {
+    return await this.retryQuery("deleteRoom", async () => {
+      let pClient;
+      try {
+        pClient = await this.connect();
+        const res = await pClient.query(
+          `
+          DELETE FROM "rooms" as r
+          WHERE r."id" = $1::int RETURNING id;`,
+          [roomId]
+        );
+        if (res.rowCount !== 1) {
+          return -1;
+        }
+        const roomData = {
+          roomId: res.rows[0].id as number,
+        };
+        return roomData;
+      } catch (error: any) {
+        console.log(
+          chalk.red("PostgresSQL Error: "),
+          error?.message,
+          error?.code
+        );
+        return null;
+      } finally {
+        if (pClient) {
+          this.release(pClient);
+        }
+      }
+    });
+  }
+  async deleteAssignCamera(cameraId: number) {
+    return await this.retryQuery("deleteAssignCamera", async () => {
+      let pClient;
+      try {
+        pClient = await this.connect();
+        const res = await pClient.query(
+          `
+          DELETE FROM "cameras" as c
+          WHERE c."id" = $1::int RETURNING id;`,
+          [cameraId]
+        );
+        if (res.rowCount !== 1) {
+          return -1;
+        }
+        const cameraData = {
+          cameraId: res.rows[0].id as number,
+        };
+        return cameraData;
+      } catch (error: any) {
+        console.log(
+          chalk.red("PostgresSQL Error: "),
+          error?.message,
+          error?.code
+        );
+        return null;
+      } finally {
+        if (pClient) {
+          this.release(pClient);
+        }
+      }
+    });
+  }
+}
+
+class ModelDBv1 extends DB {
+  // Model and Employee Data operations
+  async createModel(modelName: string, userId: number) {
+    return await this.retryQuery("createModel", async () => {
+      let pClient;
+      try {
+        pClient = await this.connect();
+        const res = await pClient.query(
+          `
+         INSERT INTO "model" ("model_name", "created_by") 
+         VALUES ($1::varchar, $2::int) RETURNING id;`,
+          [modelName, userId]
+        );
+        if (res.rowCount !== 1) {
+          return -1;
+        }
+        const roomData = {
+          roomId: res.rows[0].id as number,
+        };
+        return roomData;
+      } catch (error: any) {
+        console.log(
+          chalk.red("PostgresSQL Error: "),
+          error?.message,
+          error?.code
+        );
+        return null;
+      } finally {
+        if (pClient) {
+          this.release(pClient);
+        }
+      }
+    });
+  }
+  async updateModel(modelName: string, modelId: number) {
+    return await this.retryQuery("updateModel", async () => {
+      let pClient;
+      try {
+        pClient = await this.connect();
+        const res = await pClient.query(
+          `
+         UPDATE ""model" as m
+          SET
+            m."model_name" = $1::varchar
+         WHERE m."id" = $2::int RETURNING id;`,
+          [modelName, modelId]
+        );
+        if (res.rowCount !== 1) {
+          return -1;
+        }
+        const roomData = {
+          roomId: res.rows[0].id as number,
+        };
+        return roomData;
+      } catch (error: any) {
+        console.log(
+          chalk.red("PostgresSQL Error: "),
+          error?.message,
+          error?.code
+        );
+        return null;
+      } finally {
+        if (pClient) {
+          this.release(pClient);
+        }
+      }
+    });
+  }
+  async deleteModel(modelId: number) {
+    return await this.retryQuery("deleteModel", async () => {
+      let pClient;
+      try {
+        pClient = await this.connect();
+        const res = await pClient.query(
+          `
+          DELETE FROM "model" as m
+          WHERE m."id" = $1::int RETURNING id;`,
+          [modelId]
+        );
+        if (res.rowCount !== 1) {
+          return -1;
+        }
+        const roomData = {
+          roomId: res.rows[0].id as number,
+        };
+        return roomData;
+      } catch (error: any) {
+        console.log(
+          chalk.red("PostgresSQL Error: "),
+          error?.message,
+          error?.code
+        );
+        return null;
+      } finally {
+        if (pClient) {
+          this.release(pClient);
+        }
+      }
+    });
+  }
+  async assignModelRoom(modelId: number, roomId: number) {
+    return await this.retryQuery("assignModelRoom", async () => {
+      let pClient;
+      try {
+        pClient = await this.connect();
+        const res = await pClient.query(
+          `
+         INSERT INTO "model_room" ("model_id", "room_id") 
+         VALUES ($1::int, $2::int) RETURNING id;`,
+          [modelId, roomId]
+        );
+        if (res.rowCount !== 1) {
+          return -1;
+        }
+        const roomData = {
+          roomId: res.rows[0].id as number,
+        };
+        return roomData;
+      } catch (error: any) {
+        console.log(
+          chalk.red("PostgresSQL Error: "),
+          error?.message,
+          error?.code
+        );
+        return null;
+      } finally {
+        if (pClient) {
+          this.release(pClient);
+        }
+      }
+    });
+  }
+  async assignModelEmployee(modelId: number, employeeId: number) {
+    return await this.retryQuery("assignModelEmployee", async () => {
+      let pClient;
+      try {
+        pClient = await this.connect();
+        const res = await pClient.query(
+          `
+         INSERT INTO "model_employee" ("model_id", "room_id") 
+         VALUES ($1::int, $2::int) RETURNING id;`,
+          [modelId, employeeId]
+        );
+        if (res.rowCount !== 1) {
+          return -1;
+        }
+        const roomData = {
+          roomId: res.rows[0].id as number,
+        };
+        return roomData;
+      } catch (error: any) {
+        console.log(
+          chalk.red("PostgresSQL Error: "),
+          error?.message,
+          error?.code
+        );
+        return null;
+      } finally {
+        if (pClient) {
+          this.release(pClient);
+        }
+      }
+    });
+  }
+  async addModelEmployeeImgPath(modelEmployeeId: number, imgPath: string) {
+    return await this.retryQuery("addModelEmployeeImgPath", async () => {
+      let pClient;
+      try {
+        pClient = await this.connect();
+        const res = await pClient.query(
+          `
+         INSERT INTO "model_employee_img" ("model_employee_id", 
+         "img_path") 
+         VALUES ($1::int, $2::varchar) RETURNING id;`,
+          [modelEmployeeId, imgPath]
+        );
+        if (res.rowCount !== 1) {
+          return -1;
+        }
+        const roomData = {
+          roomId: res.rows[0].id as number,
+        };
+        return roomData;
+      } catch (error: any) {
+        console.log(
+          chalk.red("PostgresSQL Error: "),
+          error?.message,
+          error?.code
+        );
+        return null;
+      } finally {
+        if (pClient) {
+          this.release(pClient);
+        }
+      }
+    });
+  }
+  async addEmployeeData(
+    employeeId: number,
+    roomId: number,
+    totalHoursSpent: number
+  ) {
+    return await this.retryQuery("addEmployeeData", async () => {
+      let pClient;
+      try {
+        pClient = await this.connect();
+        const res = await pClient.query(
+          `
+         INSERT INTO "employee_data ("employee_id", 
+         "room_id", "total_hours_spent") 
+         VALUES ($1::int, $2::int, $3::numeric) RETURNING id;`,
+          [employeeId, roomId, totalHoursSpent]
+        );
+        if (res.rowCount !== 1) {
+          return -1;
+        }
+        const roomData = {
+          roomId: res.rows[0].id as number,
+        };
+        return roomData;
       } catch (error: any) {
         console.log(
           chalk.red("PostgresSQL Error: "),
@@ -445,4 +892,4 @@ class SessionDB extends DB {
   }
 }
 
-export { DB, UserDBv1, SessionDB, MiscDB };
+export { DB, UserDBv1, SessionDB, MiscDB, ModelDBv1, TrackerDBv1 };
