@@ -45,9 +45,7 @@ async function authMiddleWare(req: Request, res: Response, next: NextFunction) {
     if (sessionIdValidate === null || sessionIdValidate === -1) {
       // Get sessionId from PostgresSQL DB
       // console.log(authId, sessionId);
-      const sessionIdValidateDb = await sessionDb.getSessionIdByClerkUserId(
-        authId
-      );
+      const sessionIdValidateDb = await sessionDb.getSessionIdByAuthId(authId);
       // If the PostgresSQL DB is offline
       if (sessionIdValidateDb === null) {
         console.log(

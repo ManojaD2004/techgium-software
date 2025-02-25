@@ -30,4 +30,10 @@ type Model = AdminUser & {
   createdAt: string;
 };
 
-export type { Ping, Room, Camera, Model };
+type ModelEmployeeImg = {
+  createdAt: string;
+  id: number;
+  imgPath: string;
+}
+
+export type { Ping, Room, Camera, Model, ModelEmployeeImg };

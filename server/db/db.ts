@@ -1,13 +1,18 @@
 import chalk from "chalk";
 import { Pool, PoolClient } from "pg";
 import { v4 } from "uuid";
-import { Camera, Model, Ping, Room } from "../types/db";
+import { Camera, Model, ModelEmployeeImg, Ping, Room } from "../types/db";
 import { getRandomInteger } from "../helpers/randomNumber";
 import { dbConfigs } from "../configs/configs";
 import ShortUniqueId from "short-unique-id";
 import { waitForNSeconds } from "../helpers/wait";
 import { randNum } from "../helpers/random";
-import { AdminProfile, EmployeeProfile } from "../types/user";
+import {
+  AdminProfile,
+  EmployeeProfile,
+  GetEmployeeProfile,
+  GetModelEmployee,
+} from "../types/user";
 
 // Macros
 const {
@@ -218,6 +223,38 @@ class UserDBv1 extends DB {
       }
     });
   }
+  async getEmployees() {
+    return await this.retryQuery("getEmployees", async () => {
+      let pClient;
+      try {
+        pClient = await this.connect();
+        const res = await pClient.query(
+          `
+          SELECT u."id",
+          u."user_name" as "userName",
+          u."first_name" as "firstName",
+          u."last_name" as "lastName",
+          u."img_URL" as "imgURL",
+          u."phone_no" as "phoneNumber"
+          FROM "users" as u WHERE
+          u."type" = 'employee';`
+        );
+        const userData: GetEmployeeProfile[] = res.rows;
+        return userData;
+      } catch (error: any) {
+        console.log(
+          chalk.red("PostgresSQL Error: "),
+          error?.message,
+          error?.code
+        );
+        return null;
+      } finally {
+        if (pClient) {
+          this.release(pClient);
+        }
+      }
+    });
+  }
   // Admin User
   async createAdminUser(profileData: AdminProfile, imgURL: string) {
     return await this.retryQuery("createAdminUser", async () => {
@@ -317,6 +354,7 @@ class TrackerDBv1 extends DB {
       let pClient;
       try {
         pClient = await this.connect();
+        await pClient.query("BEGIN");
         const res = await pClient.query(
           `
          INSERT INTO "rooms" ("room_name", "created_by") 
@@ -324,11 +362,13 @@ class TrackerDBv1 extends DB {
           [roomName, userId]
         );
         if (res.rowCount !== 1) {
+          await pClient.query("ROLLBACK");
           return -1;
         }
         const roomData = {
           roomId: res.rows[0].id as number,
         };
+        await pClient.query("COMMIT");
         return roomData;
       } catch (error: any) {
         console.log(
@@ -336,6 +376,9 @@ class TrackerDBv1 extends DB {
           error?.message,
           error?.code
         );
+        if (pClient) {
+          await pClient.query("ROLLBACK");
+        }
         return null;
       } finally {
         if (pClient) {
@@ -349,6 +392,7 @@ class TrackerDBv1 extends DB {
       let pClient;
       try {
         pClient = await this.connect();
+        await pClient.query("BEGIN");
         const res = await pClient.query(
           `
          INSERT INTO "rooms" ("camera_name", "room_id") 
@@ -356,11 +400,13 @@ class TrackerDBv1 extends DB {
           [cameraName, roomId]
         );
         if (res.rowCount !== 1) {
+          await pClient.query("ROLLBACK");
           return -1;
         }
         const cameraData = {
           cameraId: res.rows[0].id as number,
         };
+        await pClient.query("COMMIT");
         return cameraData;
       } catch (error: any) {
         console.log(
@@ -368,6 +414,9 @@ class TrackerDBv1 extends DB {
           error?.message,
           error?.code
         );
+        if (pClient) {
+          await pClient?.query("ROLLBACK");
+        }
         return null;
       } finally {
         if (pClient) {
@@ -469,6 +518,7 @@ class TrackerDBv1 extends DB {
       let pClient;
       try {
         pClient = await this.connect();
+        await pClient.query("BEGIN");
         const res = await pClient.query(
           `
           UPDATE "rooms" as r
@@ -479,11 +529,13 @@ class TrackerDBv1 extends DB {
           [maxHeadCount, roomName, roomId]
         );
         if (res.rowCount !== 1) {
+          await pClient.query("ROLLBACK");
           return -1;
         }
         const roomData = {
           roomId: res.rows[0].id as number,
         };
+        await pClient.query("COMMIT");
         return roomData;
       } catch (error: any) {
         console.log(
@@ -491,6 +543,9 @@ class TrackerDBv1 extends DB {
           error?.message,
           error?.code
         );
+        if (pClient) {
+          await pClient.query("ROLLBACK");
+        }
         return null;
       } finally {
         if (pClient) {
@@ -508,6 +563,7 @@ class TrackerDBv1 extends DB {
       let pClient;
       try {
         pClient = await this.connect();
+        await pClient.query("BEGIN");
         const res = await pClient.query(
           `
           UPDATE "cameras" as c
@@ -518,11 +574,13 @@ class TrackerDBv1 extends DB {
           [cameraName, roomId, cameraId]
         );
         if (res.rowCount !== 1) {
+          await pClient.query("ROLLBACK");
           return -1;
         }
         const cameraData = {
           cameraId: res.rows[0].id as number,
         };
+        await pClient.query("COMMIT");
         return cameraData;
       } catch (error: any) {
         console.log(
@@ -530,6 +588,9 @@ class TrackerDBv1 extends DB {
           error?.message,
           error?.code
         );
+        if (pClient) {
+          await pClient.query("ROLLBACK");
+        }
         return null;
       } finally {
         if (pClient) {
@@ -543,6 +604,7 @@ class TrackerDBv1 extends DB {
       let pClient;
       try {
         pClient = await this.connect();
+        await pClient.query("BEGIN");
         const res = await pClient.query(
           `
           DELETE FROM "rooms" as r
@@ -550,11 +612,13 @@ class TrackerDBv1 extends DB {
           [roomId]
         );
         if (res.rowCount !== 1) {
+          await pClient.query("ROLLBACK");
           return -1;
         }
         const roomData = {
           roomId: res.rows[0].id as number,
         };
+        await pClient.query("COMMIT");
         return roomData;
       } catch (error: any) {
         console.log(
@@ -562,6 +626,9 @@ class TrackerDBv1 extends DB {
           error?.message,
           error?.code
         );
+        if (pClient) {
+          await pClient.query("ROLLBACK");
+        }
         return null;
       } finally {
         if (pClient) {
@@ -575,6 +642,7 @@ class TrackerDBv1 extends DB {
       let pClient;
       try {
         pClient = await this.connect();
+        await pClient.query("BEGIN");
         const res = await pClient.query(
           `
           DELETE FROM "cameras" as c
@@ -582,11 +650,13 @@ class TrackerDBv1 extends DB {
           [cameraId]
         );
         if (res.rowCount !== 1) {
+          await pClient.query("ROLLBACK");
           return -1;
         }
         const cameraData = {
           cameraId: res.rows[0].id as number,
         };
+        await pClient.query("COMMIT");
         return cameraData;
       } catch (error: any) {
         console.log(
@@ -594,6 +664,9 @@ class TrackerDBv1 extends DB {
           error?.message,
           error?.code
         );
+        if (pClient) {
+          await pClient.query("ROLLBACK");
+        }
         return null;
       } finally {
         if (pClient) {
@@ -611,6 +684,7 @@ class ModelDBv1 extends DB {
       let pClient;
       try {
         pClient = await this.connect();
+        await pClient.query("BEGIN");
         const res = await pClient.query(
           `
          INSERT INTO "model" ("model_name", "created_by") 
@@ -618,18 +692,23 @@ class ModelDBv1 extends DB {
           [modelName, userId]
         );
         if (res.rowCount !== 1) {
+          await pClient.query("ROLLBACK");
           return -1;
         }
-        const roomData = {
+        const modelData = {
           modelId: res.rows[0].id as number,
         };
-        return roomData;
+        await pClient.query("COMMIT");
+        return modelData;
       } catch (error: any) {
         console.log(
           chalk.red("PostgresSQL Error: "),
           error?.message,
           error?.code
         );
+        if (pClient) {
+          await pClient.query("ROLLBACK");
+        }
         return null;
       } finally {
         if (pClient) {
@@ -643,6 +722,7 @@ class ModelDBv1 extends DB {
       let pClient;
       try {
         pClient = await this.connect();
+        await pClient.query("BEGIN");
         const res = await pClient.query(
           `
          UPDATE ""model" as m
@@ -652,18 +732,23 @@ class ModelDBv1 extends DB {
           [modelName, modelId]
         );
         if (res.rowCount !== 1) {
+          await pClient.query("ROLLBACK");
           return -1;
         }
-        const roomData = {
+        const modelData = {
           roomId: res.rows[0].id as number,
         };
-        return roomData;
+        await pClient.query("COMMIT");
+        return modelData;
       } catch (error: any) {
         console.log(
           chalk.red("PostgresSQL Error: "),
           error?.message,
           error?.code
         );
+        if (pClient) {
+          await pClient.query("ROLLBACK");
+        }
         return null;
       } finally {
         if (pClient) {
@@ -714,6 +799,7 @@ class ModelDBv1 extends DB {
       let pClient;
       try {
         pClient = await this.connect();
+        await pClient.query("BEGIN");
         const res = await pClient.query(
           `
           DELETE FROM "model" as m
@@ -721,18 +807,23 @@ class ModelDBv1 extends DB {
           [modelId]
         );
         if (res.rowCount !== 1) {
+          await pClient.query("ROLLBACK");
           return -1;
         }
-        const roomData = {
+        const modelData = {
           roomId: res.rows[0].id as number,
         };
-        return roomData;
+        await pClient.query("COMMIT");
+        return modelData;
       } catch (error: any) {
         console.log(
           chalk.red("PostgresSQL Error: "),
           error?.message,
           error?.code
         );
+        if (pClient) {
+          await pClient.query("ROLLBACK");
+        }
         return null;
       } finally {
         if (pClient) {
@@ -746,6 +837,7 @@ class ModelDBv1 extends DB {
       let pClient;
       try {
         pClient = await this.connect();
+        await pClient.query("BEGIN");
         const res = await pClient.query(
           `
          INSERT INTO "model_room" ("model_id", "room_id") 
@@ -753,18 +845,23 @@ class ModelDBv1 extends DB {
           [modelId, roomId]
         );
         if (res.rowCount !== 1) {
+          await pClient.query("ROLLBACK");
           return -1;
         }
-        const roomData = {
+        const modelData = {
           modelRoomId: res.rows[0].id as number,
         };
-        return roomData;
+        await pClient.query("COMMIT");
+        return modelData;
       } catch (error: any) {
         console.log(
           chalk.red("PostgresSQL Error: "),
           error?.message,
           error?.code
         );
+        if (pClient) {
+          await pClient.query("ROLLBACK");
+        }
         return null;
       } finally {
         if (pClient) {
@@ -778,6 +875,7 @@ class ModelDBv1 extends DB {
       let pClient;
       try {
         pClient = await this.connect();
+        await pClient.query("BEGIN");
         const res = await pClient.query(
           `
          INSERT INTO "model_employee" ("model_id", "room_id") 
@@ -785,12 +883,63 @@ class ModelDBv1 extends DB {
           [modelId, employeeId]
         );
         if (res.rowCount !== 1) {
+          await pClient.query("ROLLBACK");
           return -1;
         }
-        const roomData = {
+        const modelData = {
           modelEmployeeId: res.rows[0].id as number,
         };
-        return roomData;
+        await pClient.query("COMMIT");
+        return modelData;
+      } catch (error: any) {
+        console.log(
+          chalk.red("PostgresSQL Error: "),
+          error?.message,
+          error?.code
+        );
+        if (pClient) {
+          await pClient.query("ROLLBACK");
+        }
+        return null;
+      } finally {
+        if (pClient) {
+          this.release(pClient);
+        }
+      }
+    });
+  }
+  async getAssignModelEmployee(modelId: number) {
+    return await this.retryQuery("getAssignModelEmployee", async () => {
+      let pClient;
+      try {
+        pClient = await this.connect();
+        const res = await pClient.query(
+          `
+         SELECT 
+          me."employee_id" as "employeeId",
+          COUNT(mei."img_path") as "totalImgUploaded",
+          me."id",
+          e."user_name" as "userName",
+          e."first_name" as "firstName",
+          e."last_name" as "lastName",
+          e."img_URL" as "imgURL",
+          e."phone_no" as "phoneNumber"
+         FROM "model_employee" as me
+         INNER JOIN 
+          "users" as e
+         ON e."id" = me."employee_id"
+         INNER JOIN 
+          "model_employee_img" as mei
+         ON mei."model_employee_id" = me."id"
+         WHERE me."model_id" = $1::int
+         GROUP BY 
+          me."employee_id"
+         ORDER BY 
+          me."employee_id";`,
+          [modelId]
+        );
+        const modelData: GetModelEmployee[] = res.rows;
+        return modelData;
       } catch (error: any) {
         console.log(
           chalk.red("PostgresSQL Error: "),
@@ -810,6 +959,7 @@ class ModelDBv1 extends DB {
       let pClient;
       try {
         pClient = await this.connect();
+        await pClient.query("BEGIN");
         const res = await pClient.query(
           `
          INSERT INTO "model_employee_img" ("model_employee_id", 
@@ -818,12 +968,51 @@ class ModelDBv1 extends DB {
           [modelEmployeeId, imgPath]
         );
         if (res.rowCount !== 1) {
+          await pClient.query("ROLLBACK");
           return -1;
         }
-        const roomData = {
+        const modelData = {
           modelEmployeeImgId: res.rows[0].id as number,
         };
-        return roomData;
+        await pClient.query("COMMIT");
+        return modelData;
+      } catch (error: any) {
+        console.log(
+          chalk.red("PostgresSQL Error: "),
+          error?.message,
+          error?.code
+        );
+        if (pClient) {
+          await pClient.query("ROLLBACK");
+        }
+        return null;
+      } finally {
+        if (pClient) {
+          this.release(pClient);
+        }
+      }
+    });
+  }
+  async getAssignModelEmployeeImg(modelEmpId: number) {
+    return await this.retryQuery("getAssignModelEmployeeImg", async () => {
+      let pClient;
+      try {
+        pClient = await this.connect();
+        const res = await pClient.query(
+          `
+         SELECT 
+          mei."img_path" as "imgPath",
+          mei."id",
+          mei."created_at" as "createdAt"
+         FROM "model_employee_img" as mei
+         WHERE 
+          mei."model_employee_id" = $1::int
+         ORDER BY 
+          mei."created_at";`,
+          [modelEmpId]
+        );
+        const modelData: ModelEmployeeImg[] = res.rows;
+        return modelData;
       } catch (error: any) {
         console.log(
           chalk.red("PostgresSQL Error: "),
@@ -847,6 +1036,7 @@ class ModelDBv1 extends DB {
       let pClient;
       try {
         pClient = await this.connect();
+        await pClient.query("BEGIN");
         const res = await pClient.query(
           `
          INSERT INTO "employee_data ("employee_id", 
@@ -855,18 +1045,23 @@ class ModelDBv1 extends DB {
           [employeeId, roomId, totalHoursSpent]
         );
         if (res.rowCount !== 1) {
+          await pClient.query("ROLLBACK");
           return -1;
         }
-        const roomData = {
+        const modelData = {
           roomId: res.rows[0].id as number,
         };
-        return roomData;
+        await pClient.query("COMMIT");
+        return modelData;
       } catch (error: any) {
         console.log(
           chalk.red("PostgresSQL Error: "),
           error?.message,
           error?.code
         );
+        if (pClient) {
+          await pClient.query("ROLLBACK");
+        }
         return null;
       } finally {
         if (pClient) {
@@ -908,8 +1103,8 @@ class MiscDB extends DB {
 }
 
 class SessionDB extends DB {
-  async getSessionIdByClerkUserId(clerkUserId: string) {
-    return await this.retryQuery("getSessionIdByClerkUserId", async () => {
+  async getSessionIdByAuthId(authId: string) {
+    return await this.retryQuery("getSessionIdByAuthId", async () => {
       let pClient;
       try {
         pClient = await this.connect();
@@ -917,7 +1112,7 @@ class SessionDB extends DB {
           `
            SELECT "session_id" FROM "sessions" WHERE
            "clerk_id" = $1::varchar;`,
-          [clerkUserId]
+          [authId]
         );
         if (res.rowCount !== 1) {
           return -1;
@@ -938,8 +1133,8 @@ class SessionDB extends DB {
       }
     });
   }
-  async createSessionIdByClerkUserId(clerkUserId: string, sessionId: string) {
-    return await this.retryQuery("createSessionIdByClerkUserId", async () => {
+  async createSessionIdByAuthId(authId: string, sessionId: string) {
+    return await this.retryQuery("createSessionIdByAuthId", async () => {
       let pClient;
       try {
         pClient = await this.connect();
@@ -947,7 +1142,7 @@ class SessionDB extends DB {
           `
             INSERT INTO "sessions" ("clerk_id","session_id") 
             VALUES ($1::varchar, $2::uuid) RETURNING "session_id";`,
-          [clerkUserId, sessionId]
+          [authId, sessionId]
         );
         if (res.rowCount !== 1) {
           return -1;

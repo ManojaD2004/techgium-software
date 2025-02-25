@@ -14,6 +14,18 @@ type EmployeeProfile = {
   phoneNumber: string;
 };
 
+type GetEmployeeProfile = EmployeeProfile & {
+  id: number;
+  userName: string;
+  imgURL: string;
+};
+
+type GetModelEmployee = EmployeeProfile & {
+  id: number;
+  employeeId: number;
+  totalImgUploaded: number;
+};
+
 type AdminProfile = EmployeeProfile & {
   password: string;
 };
@@ -48,4 +60,6 @@ export type {
   Notification,
   UpdateNoti,
   AdminProfile,
+  GetEmployeeProfile,
+  GetModelEmployee,
 };

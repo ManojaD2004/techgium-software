@@ -50,7 +50,7 @@ v1Routes.post("/login/employee", async (req, res) => {
       clerkId
     );
     if (!sessionIdRes || sessionIdRes === -1) {
-      let sessionIdResDb: SessionId = await sessionDb.getSessionIdByClerkUserId(
+      let sessionIdResDb: SessionId = await sessionDb.getSessionIdByAuthId(
         clerkId
       );
       if (!sessionIdResDb) {
@@ -65,7 +65,7 @@ v1Routes.post("/login/employee", async (req, res) => {
         return;
       }
       if (sessionIdResDb === -1) {
-        sessionIdResDb = await sessionDb.createSessionIdByClerkUserId(
+        sessionIdResDb = await sessionDb.createSessionIdByAuthId(
           clerkId,
           sessionId
         );
@@ -162,7 +162,7 @@ v1Routes.post("/login/admin", async (req, res) => {
       userName
     );
     if (!sessionIdRes || sessionIdRes === -1) {
-      let sessionIdResDb: SessionId = await sessionDb.getSessionIdByClerkUserId(
+      let sessionIdResDb: SessionId = await sessionDb.getSessionIdByAuthId(
         userName
       );
       if (!sessionIdResDb) {
@@ -177,7 +177,7 @@ v1Routes.post("/login/admin", async (req, res) => {
         return;
       }
       if (sessionIdResDb === -1) {
-        sessionIdResDb = await sessionDb.createSessionIdByClerkUserId(
+        sessionIdResDb = await sessionDb.createSessionIdByAuthId(
           userName,
           sessionId
         );
@@ -305,7 +305,6 @@ v1Routes.post("/create/employee", async (req, res) => {
     });
   }
 });
-
 
 v1Routes.post("/create/admin", async (req, res) => {
   try {
@@ -792,14 +791,12 @@ adminRoutes.get("/get/employees", async (req, res) => {
       });
       return;
     }
-    const trackerDb = new ModelDBv1();
-    const resModel = await trackerDb.getModels();
-    if (resModel === null) {
+    const resEmployee = await userDb.getEmployees();
+    if (resEmployee === null) {
       res.status(400).send({
         status: "fail",
         data: {
-          message: "Could not insert room data, or the database is offline",
-          redirectPage: "/onboarding",
+          message: "The database is offline",
         },
       });
       return;
@@ -807,7 +804,7 @@ adminRoutes.get("/get/employees", async (req, res) => {
     res.status(200).send({
       status: "success",
       data: {
-        models: resModel,
+        employees: resEmployee,
       },
     });
   } catch (error: any) {
@@ -881,6 +878,73 @@ adminRoutes.post("/assing/model/employee", async (req, res) => {
       status: "success",
       data: {
         ...resModelEmployee,
+      },
+    });
+  } catch (error: any) {
+    console.log(
+      chalk.red(`Error: ${error?.message}, for user id ${req.body?.userId}`)
+    );
+    res.status(400).send({
+      status: "fail",
+      error: error,
+      data: {
+        message: "Internal Server Error!",
+      },
+    });
+  }
+});
+
+adminRoutes.get("/get/assing/model/employee/:modelid", async (req, res) => {
+  try {
+    const { userId }: Cookies = req.signedCookies;
+    if (!userId) {
+      res.status(400).send({
+        status: "fail",
+        data: {
+          message: "Didnt find cookies, please login in!",
+          redirectPage: "/sign-in",
+        },
+      });
+      return;
+    }
+    const userDb = new UserDBv1();
+    const primaryId = parseInt(userId);
+    const resDb = await userDb.getUserInfoByUserId(primaryId);
+    if (resDb === -1 || resDb === null) {
+      res.status(400).send({
+        status: "fail",
+        data: {
+          message: "Could not get data, or the database is offline",
+          redirectPage: "/onboarding",
+        },
+      });
+      return;
+    }
+    if (resDb.userType !== "admin") {
+      res.status(400).send({
+        status: "fail",
+        data: {
+          message: "You are not admin. Contact your admin to create room.",
+        },
+      });
+      return;
+    }
+    const modelId = parseInt(req.params.modelid);
+    const modelDb = new ModelDBv1();
+    const resModelEmployee = await modelDb.getAssignModelEmployee(modelId);
+    if (resModelEmployee === null) {
+      res.status(400).send({
+        status: "fail",
+        data: {
+          message: "The database is offline",
+        },
+      });
+      return;
+    }
+    res.status(200).send({
+      status: "success",
+      data: {
+        modelEmployee: resModelEmployee,
       },
     });
   } catch (error: any) {
@@ -971,6 +1035,78 @@ adminRoutes.post("/assing/model/employee/image", async (req, res) => {
     });
   }
 });
+
+adminRoutes.get(
+  "/get/assing/model/employee/image/:modelempid",
+  async (req, res) => {
+    try {
+      const { userId }: Cookies = req.signedCookies;
+      if (!userId) {
+        res.status(400).send({
+          status: "fail",
+          data: {
+            message: "Didnt find cookies, please login in!",
+            redirectPage: "/sign-in",
+          },
+        });
+        return;
+      }
+      const userDb = new UserDBv1();
+      const primaryId = parseInt(userId);
+      const resDb = await userDb.getUserInfoByUserId(primaryId);
+      if (resDb === -1 || resDb === null) {
+        res.status(400).send({
+          status: "fail",
+          data: {
+            message: "Could not get data, or the database is offline",
+            redirectPage: "/onboarding",
+          },
+        });
+        return;
+      }
+      if (resDb.userType !== "admin") {
+        res.status(400).send({
+          status: "fail",
+          data: {
+            message: "You are not admin. Contact your admin to create room.",
+          },
+        });
+        return;
+      }
+      const modelEmpId = parseInt(req.params.modelempid);
+      const modelDb = new ModelDBv1();
+      const resModelEmployee = await modelDb.getAssignModelEmployeeImg(
+        modelEmpId
+      );
+      if (resModelEmployee === null) {
+        res.status(400).send({
+          status: "fail",
+          data: {
+            message: "The database is offline",
+          },
+        });
+        return;
+      }
+      res.status(200).send({
+        status: "success",
+        data: {
+          modelEmployee: resModelEmployee,
+        },
+      });
+    } catch (error: any) {
+      console.log(
+        chalk.red(`Error: ${error?.message}, for user id ${req.body?.userId}`)
+      );
+      res.status(400).send({
+        status: "fail",
+        error: error,
+        data: {
+          message: "Internal Server Error!",
+        },
+      });
+    }
+  }
+);
 
 adminRoutes.post("/assing/model/room", async (req, res) => {
   try {

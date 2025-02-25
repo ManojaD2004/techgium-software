@@ -3,7 +3,7 @@ import chalk from "chalk";
 import { serverConfigs } from "../configs/configs";
 import { ClerkCache } from "../cache/redis";
 import { clerkClient } from "@clerk/express";
-import {  SessionDB } from "../db/db";
+import { SessionDB } from "../db/db";
 import { v4 } from "uuid";
 import { SessionId } from "../types/auth";
 const devRouter = express.Router();
@@ -33,7 +33,7 @@ v1Routes.get("/login/:userid", async (req, res) => {
     }
     let sessionIdRes: SessionId = await mClient.getSessionByClerkUserId(userId);
     if (!sessionIdRes) {
-      sessionIdRes = await sessionDb.getSessionIdByClerkUserId(userId);
+      sessionIdRes = await sessionDb.getSessionIdByAuthId(userId);
       if (!sessionIdRes) {
         res.status(400).send({
           status: "fail",
@@ -47,10 +47,7 @@ v1Routes.get("/login/:userid", async (req, res) => {
       }
     }
     if (sessionIdRes === -1) {
-      sessionIdRes = await sessionDb.createSessionIdByClerkUserId(
-        userId,
-        sessionId
-      );
+      sessionIdRes = await sessionDb.createSessionIdByAuthId(userId, sessionId);
       await mClient.createSessionByClerkUserId(userId, sessionId);
     }
     if (!sessionIdRes) {
