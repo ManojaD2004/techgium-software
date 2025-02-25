@@ -1,0 +1,9 @@
+FROM node:alpine
+
+WORKDIR /server
+
+COPY ../build ./
+
+RUN npm i
+
+CMD [ "node", "server.js" ]

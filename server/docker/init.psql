@@ -1,0 +1,114 @@
+CREATE TYPE "user_type" AS ENUM('employee', 'admin');
+
+CREATE TABLE
+  "users" (
+    "id" SERIAL PRIMARY KEY,
+    "uuid" uuid NOT NULL DEFAULT (gen_random_uuid ()),
+    "user_name" varchar UNIQUE NOT NULL,
+    "clerk_id" varchar UNIQUE NOT NULL,
+    "first_name" varchar NOT NULL,
+    "last_name" varchar NOT NULL,
+    "img_URL" varchar NOT NULL,
+    "type" user_type NOT NULL,
+    "created_at" timestamptz DEFAULT (CURRENT_TIMESTAMP),
+    "email_id" varchar UNIQUE NOT NULL,
+    "phone_no" varchar UNIQUE NOT NULL
+  );
+
+CREATE TABLE
+  "sessions" (
+    "user_id" varchar UNIQUE NOT NULL,
+    "session_id" uuid NOT NULL,
+    "created_at" timestamptz DEFAULT (CURRENT_TIMESTAMP)
+  );
+
+CREATE TABLE
+  "rooms" (
+    "id" SERIAL PRIMARY KEY,
+    "room_name" varchar NOT NULL,
+    "created_by" int NOT NULL,
+    "max_head_count" int DEFAULT 10
+  );
+
+CREATE TABLE
+  "cameras" (
+    "id" SERIAL PRIMARY KEY,
+    "camera_name" varchar NOT NULL,
+    "room_id" int NOT NULL
+  );
+
+CREATE TABLE
+  "model" (
+    "id" SERIAL PRIMARY KEY,
+    "model_name" varchar UNIQUE NOT NULL,
+    "room_id" int NOT NULL
+  );
+
+CREATE TABLE
+  "model_employee" (
+    "id" SERIAL PRIMARY KEY,
+    "model_id" int NOT NULL,
+    "employee_id" int NOT NULL
+  );
+
+CREATE TABLE
+  "employee_data" (
+    "id" SERIAL PRIMARY KEY,
+    "employee_id" int NOT NULL,
+    "room_id" int NOT NULL,
+    "date" timestamptz DEFAULT (CURRENT_TIMESTAMP),
+    "total_hours_spent" numeric DEFAULT (0)
+  );
+
+CREATE TABLE
+  "notifications" (
+    "id" SERIAL PRIMARY KEY,
+    "user_id" int NOT NULL,
+    "message" TEXT NOT NULL,
+    "action" TEXT
+  );
+
+CREATE UNIQUE INDEX ON "model_employee" ("model_id", "employee_id");
+
+COMMENT ON COLUMN "rooms"."created_by" IS 'Only possible by admin user type';
+
+COMMENT ON COLUMN "rooms"."max_head_count" IS 'future work ig';
+
+COMMENT ON COLUMN "model_employee"."employee_id" IS 'User of type employee only';
+
+COMMENT ON COLUMN "employee_data"."employee_id" IS 'User of type employee only';
+
+COMMENT ON COLUMN "notifications"."user_id" IS 'User of type employee only';
+
+ALTER TABLE "sessions"
+ADD FOREIGN KEY ("user_id") REFERENCES "users" ("id");
+
+ALTER TABLE "rooms"
+ADD FOREIGN KEY ("created_by") REFERENCES "users" ("id");
+
+ALTER TABLE "cameras"
+ADD FOREIGN KEY ("room_id") REFERENCES "rooms" ("id");
+
+ALTER TABLE "model"
+ADD FOREIGN KEY ("room_id") REFERENCES "rooms" ("id");
+
+ALTER TABLE "model_employee"
+ADD FOREIGN KEY ("model_id") REFERENCES "model" ("id");
+
+ALTER TABLE "model_employee"
+ADD FOREIGN KEY ("employee_id") REFERENCES "users" ("id");
+
+ALTER TABLE "employee_data"
+ADD FOREIGN KEY ("room_id") REFERENCES "rooms" ("id");
+
+ALTER TABLE "employee_data"
+ADD FOREIGN KEY ("employee_id") REFERENCES "users" ("id");
+
+ALTER TABLE "notifications"
+ADD FOREIGN KEY ("user_id") REFERENCES "users" ("id");
+
+
+-- Future Work:
+-- Gamification like leaderboard
+-- Head count alert the admin
+-- etc.
