@@ -23,7 +23,7 @@ export default function Home() {
   const closeAdminForm = () => setAdminFormOpen(false);
   
   const handleUserLogin = () => {
-    // Redirect to the Clerk sign-in page
+   
     router.push("/sign-in");
   };
 
@@ -89,17 +89,22 @@ function AdminLoginForm({ isOpen, onClose }) {
     setError("");
     
     try {
+      console.log(username);
+      console.log(password)
+      
      
-      const response = await fetch("/api/admin/login", {
+      const response = await fetch("https://profound-adequate-salmon.ngrok-free.app/user/v1/login/admin", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ username, password })
       });
       
       const data = await response.json();
+      console.log(data);
       
       if (!response.ok) {
         toast.error(data.message || "Login failed");
+        return
       }
       
     

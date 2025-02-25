@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent } from "@/components/ui/card";
@@ -20,106 +20,35 @@ import {
   Video,
   Brain,
   Users,
+  Loader2,
 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
-
 import { Checkbox } from "@/components/ui/checkbox";
 import { Progress } from "@/components/ui/progress";
 import { Label } from "@/components/ui/label";
+import { Skeleton } from "@/components/ui/skeleton";
+import { toast } from "react-hot-toast";
 
-// ... (keep the same dummy data imports and constants)
-const DUMMY_ROOMS = [
-  {
-    id: 1,
-    name: "Conference Room A",
-    cameras: 2,
-    aiModel: "Smart Detect Pro",
-    employees: 5,
-  },
-  {
-    id: 2,
-    name: "Lobby Security",
-    cameras: 3,
-    aiModel: "Motion Track V2",
-    employees: 3,
-  },
-  {
-    id: 3,
-    name: "Warehouse Zone 1",
-    cameras: 4,
-    aiModel: "Object Recognition",
-    employees: 7,
-  },
-  {
-    id: 4,
-    name: "Executive Suite",
-    cameras: 1,
-    aiModel: "Face ID Premium",
-    employees: 2,
-  },
-  {
-    id: 5,
-    name: "Parking Entrance",
-    cameras: 2,
-    aiModel: "Vehicle Analyzer",
-    employees: 4,
-  },
-];
+const API_URL = "https://profound-adequate-salmon.ngrok-free.app";
 
+// Camera dummy data (temporary until camera API available)
 const DUMMY_CAMERAS = [
   { id: 1, name: "CAM-101 (North Entrance)" },
   { id: 2, name: "CAM-102 (Lobby)" },
   { id: 3, name: "CAM-103 (Hallway A)" },
-  { id: 4, name: "CAM-104 (Elevator)" },
-  { id: 5, name: "CAM-105 (Parking A)" },
-  { id: 6, name: "CAM-106 (Warehouse)" },
-  { id: 7, name: "CAM-107 (Office Area)" },
-];
-
-const DUMMY_AI_MODELS = [
-  {
-    id: 1,
-    name: "Smart Detect Pro",
-    description: "All-purpose detection and tracking",
-  },
-  { id: 2, name: "Motion Track V2", description: "Advanced motion detection" },
-  {
-    id: 3,
-    name: "Object Recognition",
-    description: "Identifies common objects",
-  },
-  {
-    id: 4,
-    name: "Face ID Premium",
-    description: "Facial recognition and identity matching",
-  },
-  {
-    id: 5,
-    name: "Vehicle Analyzer",
-    description: "License plate and vehicle type detection",
-  },
-];
-
-const DUMMY_EMPLOYEES = [
-  { id: 1, name: "Sarah Johnson", role: "Security Manager" },
-  { id: 2, name: "Michael Chen", role: "IT Specialist" },
-  { id: 3, name: "Jessica Williams", role: "Operations Director" },
-  { id: 4, name: "David Rodriguez", role: "Facilities Manager" },
-  { id: 5, name: "Aisha Patel", role: "Security Analyst" },
-  { id: 6, name: "Robert Kim", role: "Building Manager" },
-  { id: 7, name: "Emily Nguyen", role: "Systems Administrator" },
-  { id: 8, name: "James Wilson", role: "Security Guard" },
-  { id: 9, name: "Olivia Garcia", role: "Front Desk" },
-  { id: 10, name: "Thomas Lee", role: "Maintenance" },
 ];
 
 const RoomManagement = () => {
-  // ... (keep all the existing state and handler logic)
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [currentStep, setCurrentStep] = useState(1);
   const [searchQuery, setSearchQuery] = useState("");
+  const [rooms, setRooms] = useState([]);
+  const [isLoadingRooms, setIsLoadingRooms] = useState(true);
+  const [aiModels, setAiModels] = useState([]);
+  const [isLoadingAiModels, setIsLoadingAiModels] = useState(false);
+  const [employees, setEmployees] = useState([]);
+  const [isLoadingEmployees, setIsLoadingEmployees] = useState(false);
 
-  // Form state
   const [formData, setFormData] = useState({
     roomName: "",
     selectedCameras: [],
@@ -127,58 +56,92 @@ const RoomManagement = () => {
     selectedEmployees: [],
   });
 
-  // Handle room name input
+  useEffect(() => {
+    const fetchRooms = async () => {
+      try {
+        const response = await fetch(`${API_URL}/rooms`);
+        if (!response.ok) throw new Error("Failed to fetch rooms");
+        const data = await response.json();
+        setRooms(data);
+      } catch (error) {
+        toast.error("Failed to load rooms");
+      } finally {
+        setIsLoadingRooms(false);
+      }
+    };
+    fetchRooms();
+  }, []);
+
+  useEffect(() => {
+    const fetchAiModels = async () => {
+      if (currentStep === 2 && !aiModels.length) {
+        setIsLoadingAiModels(true);
+        try {
+          const response = await fetch(`${API_URL}/ai-models`);
+          if (!response.ok) throw new Error("Failed to fetch AI models");
+          const data = await response.json();
+          setAiModels(data);
+        } catch (error) {
+          toast.error("Failed to load AI models");
+        } finally {
+          setIsLoadingAiModels(false);
+        }
+      }
+    };
+    fetchAiModels();
+  }, [currentStep]);
+
+  // Fetch employees with debounced search
+  useEffect(() => {
+    const fetchEmployees = async () => {
+      setIsLoadingEmployees(true);
+      try {
+        const response = await fetch(
+          `${API_URL}/employees?q=${encodeURIComponent(searchQuery)}`
+        );
+        if (!response.ok) throw new Error("Failed to fetch employees");
+        const data = await response.json();
+        setEmployees(data);
+      } catch (error) {
+        toast.error("Failed to load employees");
+      } finally {
+        setIsLoadingEmployees(false);
+      }
+    };
+
+    if (currentStep === 3) {
+      const debounceTimer = setTimeout(fetchEmployees, 300);
+      return () => clearTimeout(debounceTimer);
+    }
+  }, [searchQuery, currentStep]);
+
+  // Form handlers
   const handleRoomNameChange = (e) => {
-    setFormData({
-      ...formData,
-      roomName: e.target.value,
-    });
+    setFormData({ ...formData, roomName: e.target.value });
   };
 
-  // Handle camera selection
   const handleCameraToggle = (cameraId) => {
-    setFormData((prev) => {
-      const newSelectedCameras = prev.selectedCameras.includes(cameraId)
+    setFormData((prev) => ({
+      ...prev,
+      selectedCameras: prev.selectedCameras.includes(cameraId)
         ? prev.selectedCameras.filter((id) => id !== cameraId)
-        : [...prev.selectedCameras, cameraId];
-
-      return {
-        ...prev,
-        selectedCameras: newSelectedCameras,
-      };
-    });
+        : [...prev.selectedCameras, cameraId],
+    }));
   };
 
-  // Handle AI model selection
   const handleAiModelSelect = (modelId) => {
-    setFormData({
-      ...formData,
-      selectedAiModel: modelId,
-    });
+    setFormData({ ...formData, selectedAiModel: modelId });
   };
 
-  // Handle employee selection
   const handleEmployeeToggle = (employeeId) => {
-    setFormData((prev) => {
-      const newSelectedEmployees = prev.selectedEmployees.includes(employeeId)
+    setFormData((prev) => ({
+      ...prev,
+      selectedEmployees: prev.selectedEmployees.includes(employeeId)
         ? prev.selectedEmployees.filter((id) => id !== employeeId)
-        : [...prev.selectedEmployees, employeeId];
-
-      return {
-        ...prev,
-        selectedEmployees: newSelectedEmployees,
-      };
-    });
+        : [...prev.selectedEmployees, employeeId],
+    }));
   };
 
-  // Filter employees based on search query
-  const filteredEmployees = DUMMY_EMPLOYEES.filter(
-    (employee) =>
-      employee.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      employee.role.toLowerCase().includes(searchQuery.toLowerCase())
-  );
-
-  // Reset form and close dialog
   const handleCloseDialog = () => {
     setIsDialogOpen(false);
     setCurrentStep(1);
@@ -191,25 +154,33 @@ const RoomManagement = () => {
     setSearchQuery("");
   };
 
-  // Handle form submission
-  const handleCreateRoom = () => {
-    // Here you would typically send data to your API
-    console.log("Creating room with data:", formData);
-    // Move to confirmation step
-    setCurrentStep(4);
+  const handleCreateRoom = async () => {
+    try {
+      const response = await fetch(`${API_URL}/rooms`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          name: formData.roomName,
+          cameras: formData.selectedCameras,
+          aiModelId: formData.selectedAiModel,
+          employeeIds: formData.selectedEmployees,
+        }),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.message || "Failed to create room");
+      }
+
+      const newRoom = await response.json();
+      setRooms((prev) => [...prev, newRoom]);
+      setCurrentStep(4);
+      toast.success("Room created successfully!");
+    } catch (error) {
+      toast.error(error.message);
+    }
   };
 
-  // Handle next step
-  const handleNextStep = () => {
-    setCurrentStep(currentStep + 1);
-  };
-
-  // Handle back step
-  const handleBackStep = () => {
-    setCurrentStep(currentStep - 1);
-  };
-
-  // Check if current step is valid to proceed
   const isStepValid = () => {
     switch (currentStep) {
       case 1:
@@ -221,6 +192,12 @@ const RoomManagement = () => {
       default:
         return true;
     }
+  };
+  const handleNextStep = () => {
+    setCurrentStep(currentStep + 1);
+  };
+  const handleBackStep = () => {
+    setCurrentStep(currentStep - 1);
   };
 
   return (
@@ -244,69 +221,99 @@ const RoomManagement = () => {
           </Button>
         </div>
 
-        {/* Enhanced Room Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-          {DUMMY_ROOMS.map((room) => (
-            <Card
-              key={room.id}
-              className="overflow-hidden transition-all duration-300 hover:shadow-xl border-0 bg-white/90 backdrop-blur-sm rounded-2xl group"
-            >
-              <CardContent className="p-6">
-                <div className="flex items-center gap-4 mb-4">
-                  <div className="w-12 h-12 rounded-lg bg-blue-100 flex items-center justify-center">
-                    <Video className="h-6 w-6 text-blue-600" />
+        {/* Rooms Grid */}
+        {isLoadingRooms ? (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+            {[1, 2, 3].map((i) => (
+              <Skeleton key={i} className="h-48 rounded-2xl" />
+            ))}
+          </div>
+        ) : rooms.length > 0 ? (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+            {rooms.map((room) => (
+              <Card
+                key={room.id}
+                className="overflow-hidden transition-all duration-300 hover:shadow-xl border-0 bg-white/90 backdrop-blur-sm rounded-2xl group"
+              >
+                <CardContent className="p-6">
+                  <div className="flex items-center gap-4 mb-4">
+                    <div className="w-12 h-12 rounded-lg bg-blue-100 flex items-center justify-center">
+                      <Video className="h-6 w-6 text-blue-600" />
+                    </div>
+                    <h2 className="text-xl font-bold text-slate-800">
+                      {room.name}
+                    </h2>
                   </div>
-                  <h2 className="text-xl font-bold text-slate-800">
-                    {room.name}
-                  </h2>
-                </div>
 
-                <div className="space-y-3">
-                  <div className="flex items-center text-slate-600">
-                    <Brain className="h-5 w-5 mr-2 text-purple-600" />
-                    <span className="text-sm font-medium">{room.aiModel}</span>
+                  <div className="space-y-3">
+                    <div className="flex items-center text-slate-600">
+                      <Brain className="h-5 w-5 mr-2 text-purple-600" />
+                      <span className="text-sm font-medium">
+                        {room.aiModel}
+                      </span>
+                    </div>
+                    <div className="flex items-center text-slate-600">
+                      <Users className="h-5 w-5 mr-2 text-green-600" />
+                      <span className="text-sm">
+                        {room.employees} authorized
+                      </span>
+                    </div>
+                    <div className="flex items-center text-slate-600">
+                      <Video className="h-5 w-5 mr-2 text-amber-600" />
+                      <span className="text-sm">{room.cameras} cameras</span>
+                    </div>
                   </div>
-                  <div className="flex items-center text-slate-600">
-                    <Users className="h-5 w-5 mr-2 text-green-600" />
-                    <span className="text-sm">{room.employees} authorized</span>
-                  </div>
-                  <div className="flex items-center text-slate-600">
-                    <Video className="h-5 w-5 mr-2 text-amber-600" />
-                    <span className="text-sm">{room.cameras} cameras</span>
-                  </div>
-                </div>
 
-                <div className="mt-6 pt-4 border-t border-slate-100 flex justify-end">
-                  <Button
-                    variant="outline"
-                    className="rounded-lg border-slate-200 hover:bg-blue-50 hover:border-blue-200"
-                  >
-                    Manage Settings
-                  </Button>
-                </div>
-              </CardContent>
-            </Card>
-          ))}
-        </div>
+                  <div className="mt-6 pt-4 border-t border-slate-100 flex justify-end">
+                    <Button
+                      variant="outline"
+                      className="rounded-lg border-slate-200 hover:bg-blue-50 hover:border-blue-200"
+                    >
+                      Manage Settings
+                    </Button>
+                  </div>
+                </CardContent>
+              </Card>
+            ))}
+          </div>
+        ) : (
+          <div className="flex flex-col items-center justify-center h-96 text-center">
+            <div className="p-8 bg-white/90 backdrop-blur-sm rounded-2xl shadow-lg">
+              <Users className="h-16 w-16 text-slate-300 mx-auto mb-4" />
+              <h3 className="text-2xl font-semibold text-slate-800 mb-2">
+                No Security Zones Found
+              </h3>
+              <p className="text-slate-600 max-w-md mb-6">
+                Create your first security zone to start monitoring and managing
+                access controls for different areas.
+              </p>
+              <Button
+                onClick={() => setIsDialogOpen(true)}
+                className="bg-gradient-to-r from-blue-600 to-indigo-600 text-white hover:from-blue-700 hover:to-indigo-700"
+              >
+                <Plus className="mr-2 h-5 w-5" /> Create First Zone
+              </Button>
+            </div>
+          </div>
+        )}
 
-        {/* Enhanced Create Room Dialog */}
+        {/* Create Room Dialog */}
         <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-          <DialogContent className="sm:max-w-md md:max-w-xl rounded-2xl bg-white max-h-[90%]">
+          <DialogContent className="sm:max-w-md md:max-w-xl rounded-2xl bg-white max-h-[90vh]">
             <DialogHeader>
               <DialogTitle className="text-xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-blue-600 to-indigo-600">
                 {currentStep === 4
-                  ? "Room Configuration Complete"
-                  : "New Room Setup"}
+                  ? "Configuration Complete"
+                  : "New Security Zone"}
               </DialogTitle>
               <DialogDescription className="text-slate-500">
-                {currentStep === 1 && "Start by naming your security zone"}
+                {currentStep === 1 && "Define your security zone parameters"}
                 {currentStep === 2 && "Configure surveillance devices"}
-                {currentStep === 3 && "Manage personnel access"}
-                {currentStep === 4 && "Your new security zone is operational"}
+                {currentStep === 3 && "Manage authorized personnel"}
+                {currentStep === 4 && "Zone is ready for monitoring"}
               </DialogDescription>
             </DialogHeader>
 
-            {/* Progress Visualization */}
             {currentStep < 4 && (
               <div className="space-y-4">
                 <Progress
@@ -316,27 +323,24 @@ const RoomManagement = () => {
                 <div className="flex justify-between text-sm text-slate-500">
                   <span>Step {currentStep} of 3</span>
                   <span>
-                    {currentStep === 1 && "Basic Information"}
-                    {currentStep === 2 && "Device Configuration"}
+                    {currentStep === 1 && "Basic Configuration"}
+                    {currentStep === 2 && "Device Setup"}
                     {currentStep === 3 && "Access Management"}
                   </span>
                 </div>
               </div>
             )}
 
-            {/* Step Content */}
-            <div className="py-2 space-y-2">
-              {/* ... (keep existing step content but enhance styling) */}
-
-              {/* Enhanced Step 1 */}
+            <div className="py-4 space-y-6 overflow-y-auto">
+              {/* Step 1: Basic Info */}
               {currentStep === 1 && (
                 <div className="space-y-4">
                   <div className="space-y-2">
                     <Label className="text-sm font-medium text-slate-700">
-                      Room Name
+                      Zone Name
                     </Label>
                     <Input
-                      placeholder="Security Zone Name"
+                      placeholder="Enter security zone name"
                       value={formData.roomName}
                       onChange={handleRoomNameChange}
                       className="rounded-xl border-slate-200 py-6 text-lg focus:ring-2 focus:ring-blue-500"
@@ -345,7 +349,7 @@ const RoomManagement = () => {
                 </div>
               )}
 
-              {/* Enhanced Step 2 */}
+              {/* Step 2: Device Setup */}
               {currentStep === 2 && (
                 <div className="space-y-4">
                   <div className="space-y-2">
@@ -381,46 +385,54 @@ const RoomManagement = () => {
                     <Label className="text-sm font-medium text-slate-700">
                       AI Model Selection
                     </Label>
-                    <div className="grid grid-cols-1 gap-3 h-36 overflow-y-scroll">
-                      {DUMMY_AI_MODELS.map((model) => (
-                        <div
-                          key={model.id}
-                          className={`p-2 rounded-xl border-2 transition-all cursor-pointer ${
-                            formData.selectedAiModel === model.id
-                              ? "border-purple-500 bg-purple-50"
-                              : "border-slate-200 hover:border-purple-200"
-                          }`}
-                          onClick={() => handleAiModelSelect(model.id)}
-                        >
-                          <div className="flex items-center gap-3">
-                            <div
-                              className={`h-6 w-6 rounded-full flex items-center justify-center ${
-                                formData.selectedAiModel === model.id
-                                  ? "bg-purple-600 text-white"
-                                  : "bg-slate-100 text-slate-400"
-                              }`}
-                            >
-                              {formData.selectedAiModel === model.id && (
-                                <CheckCircle className="h-3 w-3" />
-                              )}
-                            </div>
-                            <div>
-                              <h4 className="font-medium text-slate-800 text-sm">
-                                {model.name}
-                              </h4>
-                              <p className="text-sm text-slate-500 ">
-                                {model.description}
-                              </p>
+                    {isLoadingAiModels ? (
+                      <div className="flex flex-col gap-3">
+                        {[1, 2, 3].map((i) => (
+                          <Skeleton key={i} className="h-16 rounded-xl" />
+                        ))}
+                      </div>
+                    ) : (
+                      <div className="grid grid-cols-1 gap-3">
+                        {aiModels.map((model) => (
+                          <div
+                            key={model.id}
+                            className={`p-2 rounded-xl border-2 transition-all cursor-pointer ${
+                              formData.selectedAiModel === model.id
+                                ? "border-purple-500 bg-purple-50"
+                                : "border-slate-200 hover:border-purple-200"
+                            }`}
+                            onClick={() => handleAiModelSelect(model.id)}
+                          >
+                            <div className="flex items-center gap-3">
+                              <div
+                                className={`h-6 w-6 rounded-full flex items-center justify-center ${
+                                  formData.selectedAiModel === model.id
+                                    ? "bg-purple-600 text-white"
+                                    : "bg-slate-100 text-slate-400"
+                                }`}
+                              >
+                                {formData.selectedAiModel === model.id && (
+                                  <CheckCircle className="h-3 w-3" />
+                                )}
+                              </div>
+                              <div>
+                                <h4 className="font-medium text-sm text-slate-800">
+                                  {model.name}
+                                </h4>
+                                <p className="text-sm text-slate-500">
+                                  {model.description}
+                                </p>
+                              </div>
                             </div>
                           </div>
-                        </div>
-                      ))}
-                    </div>
+                        ))}
+                      </div>
+                    )}
                   </div>
                 </div>
               )}
 
-              {/* Enhanced Step 3 */}
+              {/* Step 3: Access Management */}
               {currentStep === 3 && (
                 <div className="space-y-1">
                   <div className="space-y-2">
@@ -438,95 +450,102 @@ const RoomManagement = () => {
                     </div>
                   </div>
 
-                  <div className="space-y-4">
-                    {filteredEmployees.length === 0 ? (
-                      <div className="text-center py-8 text-slate-400">
-                        No matching employees found
-                      </div>
-                    ) : (
-                      <div className="grid grid-cols-1 gap-2 max-h-36 overflow-y-auto pr-3">
-                        {filteredEmployees.map((employee) => (
-                          <div
-                            key={employee.id}
-                            className={`flex items-center p-2 rounded-lg transition-all ${
-                              formData.selectedEmployees.includes(employee.id)
-                                ? "bg-green-50 border-2 border-green-500"
-                                : "bg-slate-50 hover:bg-slate-100"
-                            }`}
-                          >
-                            <Checkbox
-                              checked={formData.selectedEmployees.includes(
-                                employee.id
-                              )}
-                              onCheckedChange={() =>
-                                handleEmployeeToggle(employee.id)
-                              }
-                              className="h-3 w-3 rounded-lg border-2 data-[state=checked]:border-green-600 data-[state=checked]:bg-green-600"
-                            />
-                            <div className="ml-3 text-sm">
-                              <h4 className="font-medium text-slate-800">
-                                {employee.name}
-                              </h4>
-                              <p className="text-sm text-slate-500">
-                                {employee.role}
-                              </p>
-                            </div>
+                  {isLoadingEmployees ? (
+                    <div className="flex flex-col gap-2">
+                      {[1, 2, 3, 4].map((i) => (
+                        <Skeleton key={i} className="h-14 rounded-lg" />
+                      ))}
+                    </div>
+                  ) : employees.length > 0 ? (
+                    <div className="grid grid-cols-1 gap-2 max-h-36 overflow-y-auto pr-3">
+                      {employees.map((employee) => (
+                        <div
+                          key={employee.id}
+                          className={`flex items-center p-2 rounded-lg transition-all ${
+                            formData.selectedEmployees.includes(employee.id)
+                              ? "bg-green-50 border-2 border-green-500"
+                              : "bg-slate-50 hover:bg-slate-100"
+                          }`}
+                          onClick={() => handleEmployeeToggle(employee.id)}
+                        >
+                          <Checkbox
+                            checked={formData.selectedEmployees.includes(
+                              employee.id
+                            )}
+                            className="h-3 w-3 rounded-lg border-2 data-[state=checked]:border-green-600 data-[state=checked]:bg-green-600"
+                          />
+                          <div className="ml-3">
+                            <h4 className="font-medium text-sm text-slate-800">
+                              {employee.name}
+                            </h4>
+                            <p className="text-sm text-slate-500">
+                              {employee.role}
+                            </p>
                           </div>
-                        ))}
-                      </div>
-                    )}
-                  </div>
+                        </div>
+                      ))}
+                    </div>
+                  ) : (
+                    <div className="text-center py-8 text-slate-400">
+                      No employees found matching your search
+                    </div>
+                  )}
                   {formData.selectedEmployees.length > 0 && (
-                <div className="pt-2 border-t border-gray-100">
-                  <p className="text-sm font-medium mb-2">Selected Employees:</p>
-                  <div className="flex flex-wrap gap-2">
-                    {formData.selectedEmployees.map((empId) => {
-                      const employee = DUMMY_EMPLOYEES.find((e) => e.id === empId);
-                      return (
-                        <Badge key={empId} variant="secondary" className="px-2 py-1">
-                          {employee?.name}
-                          <button
-                            className="ml-1 text-gray-500 hover:text-gray-700"
-                            onClick={() => handleEmployeeToggle(empId)}
-                          >
-                            ×
-                          </button>
-                        </Badge>
-                      );
-                    })}
-                  </div>
+                    <div className="pt-2 border-t border-gray-100">
+                      <p className="text-sm font-medium mb-2">
+                        Selected Employees:
+                      </p>
+                      <div className="flex flex-wrap gap-2">
+                        {formData.selectedEmployees.map((empId) => {
+                          const employee = DUMMY_EMPLOYEES.find(
+                            (e) => e.id === empId
+                          );
+                          return (
+                            <Badge
+                              key={empId}
+                              variant="secondary"
+                              className="px-2 py-1"
+                            >
+                              {employee?.name}
+                              <button
+                                className="ml-1 text-gray-500 hover:text-gray-700"
+                                onClick={() => handleEmployeeToggle(empId)}
+                              >
+                                ×
+                              </button>
+                            </Badge>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  )}
                 </div>
               )}
-                </div>
-              )}
-              
 
-              {/* Enhanced Confirmation Step */}
+              {/* Step 4: Confirmation */}
               {currentStep === 4 && (
                 <div className="py-8 text-center space-y-6">
                   <div className="mx-auto w-24 h-24 rounded-full bg-green-100 flex items-center justify-center animate-in fade-in">
                     <CheckCircle className="h-12 w-12 text-green-600" />
                   </div>
                   <h3 className="text-2xl font-bold text-slate-800">
-                    Configuration Complete!
+                    Security Zone Active!
                   </h3>
                   <p className="text-slate-600 max-w-md mx-auto leading-relaxed">
                     <span className="font-semibold text-blue-600">
                       {formData.roomName}
                     </span>{" "}
-                    is now secured with {formData.selectedCameras.length}{" "}
+                    is now monitored with {formData.selectedCameras.length}{" "}
                     cameras and {formData.selectedEmployees.length} authorized
                     personnel using the{" "}
                     {
-                      DUMMY_AI_MODELS.find(
-                        (m) => m.id === formData.selectedAiModel
-                      )?.name
+                      aiModels.find((m) => m.id === formData.selectedAiModel)
+                        ?.name
                     }{" "}
                     AI model.
                   </p>
                 </div>
               )}
-              
             </div>
 
             <DialogFooter className="flex justify-between gap-4">

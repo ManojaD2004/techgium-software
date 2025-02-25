@@ -21,7 +21,7 @@ import { Card, CardContent } from "../../../../components/ui/card";
 import { Search, Plus, User, Camera, Loader2, X } from "lucide-react";
 import { toast } from "react-hot-toast";
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL || "";
+const API_URL = "https://profound-adequate-salmon.ngrok-free.app";
 
 const fetchEmployees = async (query = "") => {
   try {
