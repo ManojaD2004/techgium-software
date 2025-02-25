@@ -6,22 +6,17 @@ import { clerkClient } from "@clerk/express";
 import { serverConfigs } from "../configs/configs";
 import { v4 } from "uuid";
 import { Cookies, SessionId } from "../types/auth";
-import {
-  candidateProfileSchema,
-  ClerkInfo,
-  recruiterProfileSchema,
-  UpdateNoti,
-} from "../types/user";
+import { ClerkInfo, employeeProfileSchema, UpdateNoti } from "../types/user";
 const userRouter = express.Router();
 const v1Routes = express.Router();
 
 // Macros
 const { SESSION_EXPIRE_TIME_IN_DAYS } = serverConfigs;
 
-v1Routes.post("/login/clerk", async (req, res) => {
+v1Routes.post("/login/employee", async (req, res) => {
   try {
-    const { userId }: ClerkInfo = req.body;
-    if (!userId) {
+    const { clerkId }: ClerkInfo = req.body;
+    if (!clerkId) {
       res.status(400).send({
         status: "fail",
         data: {
@@ -34,8 +29,8 @@ v1Routes.post("/login/clerk", async (req, res) => {
     const mClient = new ClerkCache();
     const sessionDb = new SessionDB();
     const sessionId = v4();
-    const user = await clerkClient.users.getUser(userId);
-    if (user.id !== userId) {
+    const user = await clerkClient.users.getUser(clerkId);
+    if (user.id !== clerkId) {
       res.status(401).send({
         status: "fail",
         data: {
@@ -45,10 +40,10 @@ v1Routes.post("/login/clerk", async (req, res) => {
       });
       return;
     }
-    let sessionIdRes: SessionId = await mClient.getSessionByClerkUserId(userId);
+    let sessionIdRes: SessionId = await mClient.getSessionByClerkUserId(clerkId);
     if (!sessionIdRes || sessionIdRes === -1) {
       let sessionIdResDb: SessionId = await sessionDb.getSessionIdByClerkUserId(
-        userId
+        clerkId
       );
       if (!sessionIdResDb) {
         res.status(400).send({
@@ -63,10 +58,10 @@ v1Routes.post("/login/clerk", async (req, res) => {
       }
       if (sessionIdResDb === -1) {
         sessionIdResDb = await sessionDb.createSessionIdByClerkUserId(
-          userId,
+          clerkId,
           sessionId
         );
-        await mClient.createSessionByClerkUserId(userId, sessionId);
+        await mClient.createSessionByClerkUserId(clerkId, sessionId);
       }
       if (!sessionIdResDb) {
         res.status(400).send({
@@ -99,7 +94,7 @@ v1Routes.post("/login/clerk", async (req, res) => {
       sameSite: "none",
       maxAge: 1000 * 60 * 60 * 24 * SESSION_EXPIRE_TIME_IN_DAYS,
     });
-    res.cookie("userId", userId, {
+    res.cookie("clerkId", clerkId, {
       httpOnly: true,
       secure: true,
       signed: true,
@@ -128,6 +123,57 @@ v1Routes.post("/login/clerk", async (req, res) => {
   }
 });
 
+v1Routes.post("/create/employee", async (req, res) => {
+  try {
+    const { clerkId }: Cookies = req.signedCookies;
+    if (!clerkId) {
+      res.status(400).send({
+        status: "fail",
+        data: {
+          message: "Didnt find cookies, please login in!",
+          redirectPage: "/sign-in",
+        },
+      });
+      return;
+    }
+    const userDb = new UserDBv1();
+    const imgURL = `https://cdn.pixabay.com/photo/2019/08/11/18/59/icon-4399701_640.png`;
+    const employeeData = employeeProfileSchema.parse(req.body);
+    const resDb = await userDb.createEmployeeUser(
+      employeeData,
+      clerkId,
+      imgURL
+    );
+    if (resDb === -1 || resDb === null) {
+      res.status(400).send({
+        status: "fail",
+        data: {
+          message: "Could not insert employee data, or the database is offline",
+          redirectPage: "/onboarding",
+        },
+      });
+      return;
+    }
+    res.status(400).send({
+      status: "success",
+      data: {
+        ...resDb,
+      },
+    });
+  } catch (error: any) {
+    console.log(
+      chalk.red(`Error: ${error?.message}, for user id ${req.body?.userId}`)
+    );
+    res.status(400).send({
+      status: "fail",
+      error: error,
+      data: {
+        message: "Internal Server Error!",
+      },
+    });
+  }
+});
+
 v1Routes.get("/onboarding", async (req, res) => {
   try {
     const { userId }: Cookies = req.signedCookies;
@@ -142,7 +188,7 @@ v1Routes.get("/onboarding", async (req, res) => {
       return;
     }
     const userDb = new UserDBv1();
-    const dbRes = await userDb.getIdByClerkUserId(userId);
+    const dbRes = await userDb.getUserInfoByUserId(parseInt(userId));
     if (!dbRes) {
       res.status(400).send({
         status: "fail",

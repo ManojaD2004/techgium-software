@@ -13,7 +13,7 @@ import { MemCache } from "./cache/redis";
 import { DB } from "./db/db";
 import { rateLimitMiddleWare } from "./middlewares/rateLimiting";
 import compression from "compression";
-import { interviewRouter } from "./track/route";
+import { trackRouter } from "./track/route";
 
 const { COOKIE_SECRET } = envConfigs;
 const { CORS_ORIGIN } = serverConfigs;
@@ -40,13 +40,13 @@ app.use(express.json());
 app.use(cookieParser(COOKIE_SECRET));
 app.use(morgan("dev"));
 app.use(hitMiddleWare);
-app.use(rateLimitMiddleWare);
-app.use(authMiddleWare);
+// app.use(rateLimitMiddleWare);
+// app.use(authMiddleWare);
 
 // Routes
 app.use("/user", userRouter);
 app.use("/dev", devRouter);
-app.use("/track", interviewRouter);
+app.use("/track", trackRouter);
 
 app.get("/hello", (_, res) => {
   try {

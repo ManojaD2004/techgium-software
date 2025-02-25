@@ -7,7 +7,7 @@ import { dbConfigs } from "../configs/configs";
 import ShortUniqueId from "short-unique-id";
 import { waitForNSeconds } from "../helpers/wait";
 import { randNum } from "../helpers/random";
-import { UserProfile } from "../types/user";
+import { EmployeeProfile } from "../types/user";
 
 // Macros
 const {
@@ -123,7 +123,7 @@ class DB {
 }
 class UserDBv1 extends DB {
   // Get User Info
-  async getUserInfoByUserId(userId: string) {
+  async getUserInfoByUserId(userId: number) {
     return await this.retryQuery("getUserInfoByUserId", async () => {
       let pClient;
       try {
@@ -158,7 +158,7 @@ class UserDBv1 extends DB {
   }
   // Employee User
   async createEmployeeUser(
-    profileData: UserProfile,
+    profileData: EmployeeProfile,
     clerkId: string,
     imgURL: string
   ) {
