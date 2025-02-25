@@ -32,7 +32,6 @@ class SimpleFacerec:
                 self.known_face_names.append(filename)
             else:
                 print("No face found in:", img_path)
-        print(self.known_face_encodings, self.known_face_names)
         print("Encoding images loaded.")
 
     def detect_known_faces(self, frame):
