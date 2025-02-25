@@ -8,11 +8,14 @@ type UpdateNoti = {
   notificationId?: number;
 };
 
-
 type EmployeeProfile = {
   firstName: string;
   lastName: string;
   phoneNumber: string;
+};
+
+type AdminProfile = EmployeeProfile & {
+  password: string;
 };
 
 type Notification = {
@@ -31,10 +34,18 @@ const employeeProfileSchema = z.object({
   phoneNumber: z.string(),
 });
 
-export { employeeProfileSchema };
+const adminProfileSchema = z.object({
+  firstName: z.string(),
+  lastName: z.string(),
+  phoneNumber: z.string(),
+  password: z.string(),
+});
+
+export { employeeProfileSchema, adminProfileSchema };
 export type {
   ClerkInfo,
   EmployeeProfile,
   Notification,
   UpdateNoti,
+  AdminProfile,
 };

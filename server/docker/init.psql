@@ -5,6 +5,7 @@ CREATE TABLE
     "id" SERIAL PRIMARY KEY,
     "uuid" uuid NOT NULL DEFAULT (gen_random_uuid ()),
     "user_name" varchar UNIQUE NOT NULL,
+    "password" varchar,
     "clerk_id" varchar UNIQUE,
     "first_name" varchar NOT NULL,
     "last_name" varchar NOT NULL,

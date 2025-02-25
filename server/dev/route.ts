@@ -3,7 +3,7 @@ import chalk from "chalk";
 import { serverConfigs } from "../configs/configs";
 import { ClerkCache } from "../cache/redis";
 import { clerkClient } from "@clerk/express";
-import { MiscDB, SessionDB } from "../db/db";
+import {  SessionDB } from "../db/db";
 import { v4 } from "uuid";
 import { SessionId } from "../types/auth";
 const devRouter = express.Router();
@@ -100,70 +100,6 @@ v1Routes.get("/login/:userid", async (req, res) => {
     console.log(
       chalk.red(`Error: ${error?.message}, for user id ${req.body?.userId}`)
     );
-    res.status(400).send({
-      status: "fail",
-      error: error,
-      data: {
-        message: "Internal Server Error!",
-      },
-    });
-  }
-});
-
-v1Routes.post("/misc/candidate/fakeusers", async (_, res) => {
-  try {
-    const miscDb = new MiscDB();
-    const resDb = await miscDb.insert100FakeUsers();
-    if (resDb === -1 || resDb === false) {
-      res.status(400).send({
-        status: "fail",
-        data: {
-          resDb,
-          message: "Could not insert 100 fake candidate users!",
-        },
-      });
-      return;
-    }
-    res.status(200).send({
-      status: "success",
-      data: {
-        resDb,
-        message: "Inserted 100 fake candidate users!",
-      },
-    });
-  } catch (error: any) {
-    res.status(400).send({
-      status: "fail",
-      error: error,
-      data: {
-        message: "Internal Server Error!",
-      },
-    });
-  }
-});
-
-v1Routes.post("/misc/interview/dummy/topics", async (_, res) => {
-  try {
-    const miscDb = new MiscDB();
-    const resDb = await miscDb.insert4DummyInterviewTopics();
-    if (resDb === -1 || resDb === false) {
-      res.status(400).send({
-        status: "fail",
-        data: {
-          resDb,
-          message: "Could not insert 4 interview topic!",
-        },
-      });
-      return;
-    }
-    res.status(200).send({
-      status: "success",
-      data: {
-        resDb,
-        message: "Inserted 4 interview topic!",
-      },
-    });
-  } catch (error: any) {
     res.status(400).send({
       status: "fail",
       error: error,

@@ -1,13 +1,13 @@
 import chalk from "chalk";
 import { Pool, PoolClient } from "pg";
 import { v4 } from "uuid";
-import { Camera, Ping, Room } from "../types/db";
+import { Camera, Model, Ping, Room } from "../types/db";
 import { getRandomInteger } from "../helpers/randomNumber";
 import { dbConfigs } from "../configs/configs";
 import ShortUniqueId from "short-unique-id";
 import { waitForNSeconds } from "../helpers/wait";
 import { randNum } from "../helpers/random";
-import { EmployeeProfile } from "../types/user";
+import { AdminProfile, EmployeeProfile } from "../types/user";
 
 // Macros
 const {
@@ -219,7 +219,7 @@ class UserDBv1 extends DB {
     });
   }
   // Admin User
-  async createAdminUser(profileData: UserProfile, imgURL: string) {
+  async createAdminUser(profileData: AdminProfile, imgURL: string) {
     return await this.retryQuery("createAdminUser", async () => {
       let pClient;
       try {
@@ -235,10 +235,10 @@ class UserDBv1 extends DB {
         const res = await pClient.query(
           `
           INSERT INTO "users" ("user_name", "first_name",
-          "last_name", "img_URL", "type", "phone_no") 
+          "last_name", "img_URL", "type", "phone_no", "password") 
           VALUES ($1::varchar, $2::varchar,
           $3::varchar, $4::varchar, $5::user_type,
-          $6::varchar) RETURNING id;`,
+          $6::varchar, $7::varchar) RETURNING id;`,
           [
             userName,
             profileData.firstName,
@@ -246,6 +246,7 @@ class UserDBv1 extends DB {
             imgURL,
             "admin",
             profileData.phoneNumber,
+            profileData.password,
           ]
         );
         if (res.rowCount !== 1) {
@@ -267,6 +268,38 @@ class UserDBv1 extends DB {
         if (pClient) {
           await pClient.query("ROLLBACK");
         }
+        return null;
+      } finally {
+        if (pClient) {
+          this.release(pClient);
+        }
+      }
+    });
+  }
+  async verifyAdminUser(userName: string, password: string) {
+    return await this.retryQuery("verifyAdminUser", async () => {
+      let pClient;
+      try {
+        pClient = await this.connect();
+        const res = await pClient.query(
+          `
+          SELECT "id" FROM "users" WHERE
+          "user_name" = $1::varchar AND "password" = $2::varchar AND "type" = 'admin';`,
+          [userName, password]
+        );
+        if (res.rowCount !== 1) {
+          return -1;
+        }
+        const userData = {
+          primaryId: res.rows[0].id as number,
+        };
+        return userData;
+      } catch (error: any) {
+        console.log(
+          chalk.red("PostgresSQL Error: "),
+          error?.message,
+          error?.code
+        );
         return null;
       } finally {
         if (pClient) {
@@ -353,16 +386,23 @@ class TrackerDBv1 extends DB {
           SELECT 
             r."room_name" as "roomName",
             r."id" as "roomId",
+            r."created_at" as "createdAt",
             r."max_head_count" as "maxHeadCount",
             a."user_name" as "userName", 
             a."first_name" as "firstName",
             a."last_name" as "lastName,
             a."img_URL" as "imgURL",
-            a."phone_no" as "phoneNo"
+            a."phone_no" as "phoneNo",
+            mr."model_id" as "modelId,
+            m."model_name" as "modelName"
           FROM "rooms" as r
           INNER JOIN "users" a ON
           r."created_by" = a."id" AND
-          a."type" = 'admin'`
+          a."type" = 'admin'
+          LEFT JOIN "model_room" as mr
+          r."id" = mr."room_id"
+          LEFT JOIN "model" as m
+          mr."model_id" = m."id"`
         );
         const roomData: Room[] = res.rows;
         return roomData;
@@ -581,7 +621,7 @@ class ModelDBv1 extends DB {
           return -1;
         }
         const roomData = {
-          roomId: res.rows[0].id as number,
+          modelId: res.rows[0].id as number,
         };
         return roomData;
       } catch (error: any) {
@@ -618,6 +658,43 @@ class ModelDBv1 extends DB {
           roomId: res.rows[0].id as number,
         };
         return roomData;
+      } catch (error: any) {
+        console.log(
+          chalk.red("PostgresSQL Error: "),
+          error?.message,
+          error?.code
+        );
+        return null;
+      } finally {
+        if (pClient) {
+          this.release(pClient);
+        }
+      }
+    });
+  }
+  async getModels() {
+    return await this.retryQuery("getModels", async () => {
+      let pClient;
+      try {
+        pClient = await this.connect();
+        const res = await pClient.query(
+          `
+         SELECT 
+          m."id" as "modelId",
+          m."model_name" as "modelName",
+          m."created_at" as "createdAt",
+          a."user_name" as "userName", 
+          a."first_name" as "firstName",
+          a."last_name" as "lastName,
+          a."img_URL" as "imgURL",
+          a."phone_no" as "phoneNo"
+         FROM "model" as m
+         INNER JOIN "users" a ON
+          r."created_by" = a."id" AND
+          a."type" = 'admin'`
+        );
+        const modelData: Model[] = res.rows;
+        return modelData;
       } catch (error: any) {
         console.log(
           chalk.red("PostgresSQL Error: "),
@@ -679,7 +756,7 @@ class ModelDBv1 extends DB {
           return -1;
         }
         const roomData = {
-          roomId: res.rows[0].id as number,
+          modelRoomId: res.rows[0].id as number,
         };
         return roomData;
       } catch (error: any) {
@@ -711,7 +788,7 @@ class ModelDBv1 extends DB {
           return -1;
         }
         const roomData = {
-          roomId: res.rows[0].id as number,
+          modelEmployeeId: res.rows[0].id as number,
         };
         return roomData;
       } catch (error: any) {
@@ -744,7 +821,7 @@ class ModelDBv1 extends DB {
           return -1;
         }
         const roomData = {
-          roomId: res.rows[0].id as number,
+          modelEmployeeImgId: res.rows[0].id as number,
         };
         return roomData;
       } catch (error: any) {

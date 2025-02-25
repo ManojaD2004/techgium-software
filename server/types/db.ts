@@ -2,15 +2,21 @@ type Ping = {
   pong: string;
 };
 
-type Room = {
-  roomName: string;
-  roomId: number;
+type AdminUser = {
   userName: string;
   firstName: string;
   lastName: string;
   imgURL: string;
   phoneNo: string;
+};
+
+type Room = AdminUser  & {
+  roomName: string;
+  roomId: number;
+  createdAt: string;
   maxHeadCount?: number;
+  modelId: number | null;
+  modelName: string | null;
 };
 
 type Camera = Room & {
@@ -18,4 +24,10 @@ type Camera = Room & {
   cameraName: string;
 }
 
-export type { Ping, Room, Camera };
+type Model = AdminUser & {
+  modelId: number;
+  modelName: string;
+  createdAt: string;
+};
+
+export type { Ping, Room, Camera, Model };

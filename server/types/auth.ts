@@ -1,7 +1,7 @@
 type Cookies = {
   sessionId?: string;
   userId?: string;
-  clerkId?: string;
+  authId?: string;
 };
 
 type SessionId = string | -1 | null;

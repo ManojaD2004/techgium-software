@@ -22,9 +22,9 @@ async function authMiddleWare(req: Request, res: Response, next: NextFunction) {
     return;
   }
   try {
-    const { sessionId, userId }: Cookies = req.signedCookies;
-    // console.log(sessionId, userId);
-    if (!userId || !sessionId) {
+    const { sessionId, authId }: Cookies = req.signedCookies;
+    // console.log(sessionId, authId);
+    if (!authId || !sessionId) {
       console.log(chalk.yellow(`Auth failed need to log in!`));
       res.status(401).send({
         status: "fail",
@@ -39,20 +39,20 @@ async function authMiddleWare(req: Request, res: Response, next: NextFunction) {
     const sessionDb = new SessionDB();
     // Get sessionId from Redis DB
     let sessionIdValidate: SessionId = await mClient.getSessionByClerkUserId(
-      userId
+      authId
     );
     // If the Redis DB is offline or didnt find the sessionId
     if (sessionIdValidate === null || sessionIdValidate === -1) {
       // Get sessionId from PostgresSQL DB
-      // console.log(userId, sessionId);
+      // console.log(authId, sessionId);
       const sessionIdValidateDb = await sessionDb.getSessionIdByClerkUserId(
-        userId
+        authId
       );
       // If the PostgresSQL DB is offline
       if (sessionIdValidateDb === null) {
         console.log(
           chalk.yellow(
-            `Auth failed user: ${userId}, Redis Database and PostgresSQL Database is offline!`
+            `Auth failed user: ${authId}, Redis Database and PostgresSQL Database is offline!`
           )
         );
         res.status(400).send({
@@ -68,7 +68,7 @@ async function authMiddleWare(req: Request, res: Response, next: NextFunction) {
       // If the PostgresSQL DB didnt find the sessionId
       if (sessionIdValidateDb === -1) {
         console.log(
-          chalk.yellow(`Auth failed user: ${userId}, need to log in!`)
+          chalk.yellow(`Auth failed user: ${authId}, need to log in!`)
         );
         res.status(401).send({
           status: "fail",
@@ -82,7 +82,7 @@ async function authMiddleWare(req: Request, res: Response, next: NextFunction) {
       // Only create sessionId to Redis DB
       // if it is online and didnt find the sessionId
       if (sessionIdValidate === -1) {
-        await mClient.createSessionByClerkUserId(userId, sessionIdValidateDb);
+        await mClient.createSessionByClerkUserId(authId, sessionIdValidateDb);
       }
       sessionIdValidate = sessionIdValidateDb;
     }
@@ -91,7 +91,7 @@ async function authMiddleWare(req: Request, res: Response, next: NextFunction) {
     if (sessionIdValidate !== sessionId) {
       console.log(
         chalk.yellow(
-          `Auth failed user: ${userId}, session id did not match, Hacker!`
+          `Auth failed user: ${authId}, session id did not match, Hacker!`
         )
       );
       res.status(401).send({
