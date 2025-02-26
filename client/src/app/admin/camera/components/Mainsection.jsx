@@ -245,7 +245,7 @@ const CameraDashboard = () => {
                           <CardContent className="p-0 relative">
                             <div className="aspect-video bg-slate-900 flex items-center justify-center">
                               <img 
-                                src={`${API_LINK}:${camera.port}/video_feed`}
+                                src={`http://localhost:${camera.port}/video_feed`}
                                 alt="Camera Feed"
                                 onError={(e) => {
                                   e.target.onerror = null;
