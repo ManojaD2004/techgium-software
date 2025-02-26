@@ -14,9 +14,18 @@ type EmployeeData = {
 const roomSchema = z.object({
   roomName: z.string(),
   modelId: z.number().int(),
-  cameras: z.number().int().array(),
-  employees: z.number().int().array(),
+  cameras: z.number().int().array().min(1),
+  employees: z.number().int().array().min(1),
+  maxHeadCount: z.number().int().optional(),
 });
+
+type RoomData = {
+  roomName: string;
+  modelId: number;
+  cameras: number[];
+  employees: number[];
+  maxHeadCount?: number;
+};
 
 const cameraSchema = z.object({
   cameraName: z.string(),
@@ -26,10 +35,10 @@ const cameraSchema = z.object({
 });
 
 const modelSchema = z.object({
- modelName: z.string(),
+  modelName: z.string(),
   modelDesc: z.string(),
 });
 
-export type { EmployeeData };
+export type { EmployeeData, RoomData };
 
 export { roomSchema, cameraSchema, modelSchema };

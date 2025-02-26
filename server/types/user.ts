@@ -13,6 +13,7 @@ type EmployeeProfile = {
   firstName: string;
   lastName: string;
   phoneNumber: string;
+  password: string;
 };
 
 type GetEmployeeProfile = EmployeeProfile & {

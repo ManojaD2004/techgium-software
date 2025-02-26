@@ -1,4 +1,4 @@
-import { GetModelEmployee } from "./user";
+import { GetEmployeeProfile } from "./user";
 
 type Ping = {
   pong: string;
@@ -16,10 +16,11 @@ type Room = AdminUser & {
   roomName: string;
   roomId: number;
   createdAt: string;
-  maxHeadCount?: number;
-  modelId: number | null;
-  modelName: string | null;
+  maxHeadCount: number;
+  modelId: number;
+  modelName: string;
   cameras: Camera[];
+  employees: GetEmployeeProfile[];
 };
 
 type Camera = {

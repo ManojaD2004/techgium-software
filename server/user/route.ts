@@ -1,6 +1,6 @@
 import chalk from "chalk";
 import express from "express";
-import { ClerkCache, MemCache } from "../cache/redis";
+import { ClerkCache } from "../cache/redis";
 import fileUpload, { UploadedFile } from "express-fileupload";
 import { ModelDBv1, SessionDB, TrackerDBv1, UserDBv1 } from "../db/db";
 import { serverConfigs } from "../configs/configs";
@@ -10,7 +10,6 @@ import {
   adminProfileSchema,
   ClerkInfo,
   employeeProfileSchema,
-  UpdateNoti,
 } from "../types/user";
 import { cameraSchema, modelSchema, roomSchema } from "../types/model";
 import path from "path";
@@ -270,7 +269,7 @@ v1Routes.post(
       const allFile = req.files.files as UploadedFile[];
       const userData = req.files.userData as UploadedFile;
       const userJson = JSON.parse(userData.data.toString());
-      console.log(allFile, userJson, req.files);
+      // console.log(allFile, userJson, req.files);
       const employeeData = employeeProfileSchema.parse(userJson);
       const resDb = await userDb.createEmployeeUser(employeeData, imgURL);
       if (resDb === -1 || resDb === null) {
@@ -284,6 +283,7 @@ v1Routes.post(
         return;
       }
       const modelDb = new ModelDBv1();
+      let changeDp = true;
       for (const file of allFile) {
         const fileName = v4().slice(0, 6);
         const fileSpilt = file.name.split(".");
@@ -308,7 +308,23 @@ v1Routes.post(
           });
           return;
         }
-        console.log(file.name);
+        if (changeDp) {
+          const resChange = await userDb.updateEmployeeImgUrl(
+            resDb.primaryId,
+            `/file/v1/image/${fileName}.${fileExt}`
+          );
+          if (resChange === -1 || resChange === null) {
+            res.status(400).send({
+              status: "fail",
+              data: {
+                message:
+                  "Could not insert employee data, or the database is offline",
+              },
+            });
+            return;
+          }
+          changeDp = false;
+        }
       }
       res.status(200).send({
         status: "success",
@@ -412,7 +428,7 @@ adminRoutes.post("/create/room", async (req, res) => {
       return;
     }
     const trackerDb = new TrackerDBv1();
-    const resRoom = await trackerDb.createRoom(room.roomName, primaryId);
+    const resRoom = await trackerDb.createRoom(room, primaryId);
     if (resRoom === -1 || resRoom === null) {
       res.status(400).send({
         status: "fail",
@@ -443,7 +459,7 @@ adminRoutes.post("/create/room", async (req, res) => {
   }
 });
 
-adminRoutes.get("/get/room", async (req, res) => {
+adminRoutes.get("/get/rooms", async (req, res) => {
   try {
     const { userId }: Cookies = req.signedCookies;
     if (!userId) {
@@ -721,7 +737,7 @@ adminRoutes.post("/create/model", async (req, res) => {
   }
 });
 
-adminRoutes.get("/get/model", async (req, res) => {
+adminRoutes.get("/get/models", async (req, res) => {
   try {
     const { userId }: Cookies = req.signedCookies;
     if (!userId) {
