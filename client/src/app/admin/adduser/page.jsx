@@ -1,20 +1,12 @@
-import React from "react";
-
-import { CirclePlusIcon } from "lucide-react";
-import Formcomp from "./components/formcomp";
-
-
+import React from 'react'
+import EmployeeDirectory from './components/directory'
 
 const Page = () => {
   return (
-    <div className="pl-2">
-      <div className="flex items-center justify-center gap-1">
-        <p className="text-2xl font-bold">Add user</p>
-        <CirclePlusIcon />
-      </div>
-      <Formcomp/>
+    <div className='flex items-center justify-center min-w-full pl-5'>
+      <EmployeeDirectory/>
     </div>
-  );
-};
+  )
+}
 
-export default Page;
+export default Page
