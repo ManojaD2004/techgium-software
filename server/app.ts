@@ -28,24 +28,24 @@ app.use((_, res, next) => {
   res.setHeader("ngrok-skip-browser-warning", "true");
   next();
 });
+app.use(cookieParser(COOKIE_SECRET));
 app.use(
   cors({
     credentials: true,
     origin: CORS_ORIGIN,
   })
 );
-app.use(compression());
-app.use(helmet());
-app.use(express.json());
-app.use(cookieParser(COOKIE_SECRET));
-app.use(morgan("dev"));
 app.use(hitMiddleWare);
+app.use(morgan("dev"));
+
 // app.use(authMiddleWare);
 
 // Routes
+userRouter.use(express.json());
+userRouter.use(compression());
+userRouter.use(helmet());
 app.use("/user", userRouter);
-app.use("/dev", devRouter);
-app.use("/track", trackRouter);
+fileRouter.use(cors());
 app.use("/file", fileRouter);
 
 app.get("/hello", (_, res) => {

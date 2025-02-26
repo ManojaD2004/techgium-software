@@ -266,7 +266,7 @@ v1Routes.post(
         res.status(400).send({ status: "fail", error: "No file found" });
         return;
       }
-      const allFile = req.files.files as UploadedFile[];
+      const allFile = req.files.files;
       const userData = req.files.userData as UploadedFile;
       const userJson = JSON.parse(userData.data.toString());
       // console.log(allFile, userJson, req.files);
@@ -284,7 +284,51 @@ v1Routes.post(
       }
       const modelDb = new ModelDBv1();
       let changeDp = true;
-      for (const file of allFile) {
+      if (Array.isArray(allFile)) {
+        for (const file of allFile) {
+          const fileName = v4().slice(0, 6);
+          const fileSpilt = file.name.split(".");
+          const fileExt = fileSpilt[fileSpilt.length - 1];
+          const pathString = path.join(
+            process.cwd(),
+            `./public/images/${fileName}.${fileExt}`
+          );
+          await file.mv(pathString);
+          const resImg = await modelDb.addEmployeeImgPath(
+            resDb.primaryId,
+            `/images/${fileName}.${fileExt}`,
+            `/file/v1/image/${fileName}.${fileExt}`
+          );
+          if (resImg === -1 || resImg === null) {
+            res.status(400).send({
+              status: "fail",
+              data: {
+                message:
+                  "Could not insert employee data, or the database is offline",
+              },
+            });
+            return;
+          }
+          if (changeDp) {
+            const resChange = await userDb.updateEmployeeImgUrl(
+              resDb.primaryId,
+              `/file/v1/image/${fileName}.${fileExt}`
+            );
+            if (resChange === -1 || resChange === null) {
+              res.status(400).send({
+                status: "fail",
+                data: {
+                  message:
+                    "Could not insert employee data, or the database is offline",
+                },
+              });
+              return;
+            }
+            changeDp = false;
+          }
+        }
+      } else {
+        const file = allFile;
         const fileName = v4().slice(0, 6);
         const fileSpilt = file.name.split(".");
         const fileExt = fileSpilt[fileSpilt.length - 1];
@@ -295,7 +339,7 @@ v1Routes.post(
         await file.mv(pathString);
         const resImg = await modelDb.addEmployeeImgPath(
           resDb.primaryId,
-          pathString,
+          `/images/${fileName}.${fileExt}`,
           `/file/v1/image/${fileName}.${fileExt}`
         );
         if (resImg === -1 || resImg === null) {

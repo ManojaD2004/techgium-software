@@ -32,4 +32,6 @@ v1Routes.get("/live/:port", async (req, res) => {
   }
 });
 
+v1Routes.post("/start", () => {})
+
 export { trackRouter };

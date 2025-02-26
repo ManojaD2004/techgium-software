@@ -20,3 +20,6 @@ ngrok http --url=profound-adequate-salmon.ngrok-free.app localhost:9000
 pm2 start server -i max
 
 pm2 reload server
+
+# Python
+docker build -t model-py -f dockerfile.python ./
