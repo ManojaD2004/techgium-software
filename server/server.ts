@@ -46,6 +46,14 @@ async function main() {
       if (!fs.existsSync(pathImage)) {
         fs.mkdirSync(pathImage, { recursive: true });
       }
+      const pathMetadata = path.join(process.cwd(), "/metadata");
+      if (!fs.existsSync(pathMetadata)) {
+        fs.mkdirSync(pathMetadata, { recursive: true });
+      }
+      const pathModelData = path.join(process.cwd(), "/model_data");
+      if (!fs.existsSync(pathModelData)) {
+        fs.mkdirSync(pathModelData, { recursive: true });
+      }
     });
     process.on("SIGINT", async () => {
       console.log(chalk.red("Shutting down Process..."));
