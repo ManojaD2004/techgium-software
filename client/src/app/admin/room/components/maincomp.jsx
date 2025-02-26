@@ -47,6 +47,7 @@ const RoomManagement = () => {
   const [isLoadingAiModels, setIsLoadingAiModels] = useState(false);
   const [employees, setEmployees] = useState([]);
   const [isLoadingEmployees, setIsLoadingEmployees] = useState(false);
+  const [cameras, setCameras] = useState([]);
 
   const [formData, setFormData] = useState({
     roomName: "",
@@ -58,17 +59,16 @@ const RoomManagement = () => {
   useEffect(() => {
     const fetchRooms = async () => {
       try {
-        const response = await fetch(`${API_URL}/user/v1/admin/get/room`, {
+        const response = await fetch(`${API_URL}/user/v1/admin/get/rooms`, {
           credentials: "include",
           headers: {
             "Content-Type": "application/json",
             "ngrok-skip-browser-warning": "true",
           },
         });
-        if (!response.ok){
+        if (!response.ok) {
           toast.error("Failed to fetch rooms");
         }
-          
 
         const data = await response.json();
         setRooms(data.data.rooms);
@@ -86,7 +86,7 @@ const RoomManagement = () => {
       if (currentStep === 2 && !aiModels.length) {
         setIsLoadingAiModels(true);
         try {
-          const response = await fetch(`${API_URL}/user/v1/admin/get/model`, {
+          const response = await fetch(`${API_URL}/user/v1/admin/get/models`, {
             credentials: "include",
             headers: {
               "Content-Type": "application/json",
@@ -94,9 +94,9 @@ const RoomManagement = () => {
             },
           });
           if (!response.ok) {
-           toast.error("Failed to fetch AI models");
+            toast.error("Failed to fetch AI models");
           }
-         
+
           const data = await response.json();
           setAiModels(data.data.models);
         } catch (error) {
@@ -107,6 +107,35 @@ const RoomManagement = () => {
       }
     };
     fetchAiModels();
+  }, [currentStep]);
+
+  useEffect(() => {
+    const fetchCameras = async () => {
+      if (currentStep === 2 && !cameras.length) {
+        try {
+          const response = await fetch(
+            `${API_URL}/user/v1/admin/get/cameras`,{
+                credentials: "include",
+                headers: {
+                  "Content-Type": "application/json",
+                  "ngrok-skip-browser-warning": "true",
+                },
+            }
+          );
+          const data = await response.json();
+          console.log(data);
+          
+
+          if (data.status === "success" && data.data?.cameras) {
+            setCameras(data.data.cameras);
+          }
+        } catch (error) {
+          console.error("Error fetching cameras:", error);
+        }
+      }
+    };
+
+    fetchCameras();
   }, [currentStep]);
 
   useEffect(() => {
@@ -152,8 +181,10 @@ const RoomManagement = () => {
     }));
   };
   const handleCreateRoom = async () => {
+    console.log(formData);
+
     try {
-      const response = await fetch(`${API_URL}/rooms`, {
+      const response = await fetch(`${API_URL}/user/v1/admin/create/room`, {
         method: "POST",
         credentials: "include",
         headers: {
@@ -161,22 +192,23 @@ const RoomManagement = () => {
           "ngrok-skip-browser-warning": "true",
         },
         body: JSON.stringify({
-          name: formData.roomName,
+          roomName: formData.roomName,
           cameras: formData.selectedCameras,
-          aiModelId: formData.selectedAiModel,
-          employeeIds: formData.selectedEmployees,
+          modelId: formData.selectedAiModel,
+          employees: formData.selectedEmployees,
         }),
       });
 
       if (!response.ok) {
         const errorData = await response.json();
         toast.error(errorData.message || "Failed to create room");
+        return
       }
 
       const newRoom = await response.json();
-      setRooms((prev) => [...prev, newRoom]);
       setCurrentStep(4);
       toast.success("Room created successfully!");
+
     } catch (error) {
       toast.error(error.message);
     }
@@ -281,8 +313,8 @@ const RoomManagement = () => {
                     <div className="flex items-center text-slate-600">
                       <Video className="h-5 w-5 mr-2 text-amber-600" />
                       <span className="text-sm">{room.userName} </span>
-                    </div> 
-                   
+                    </div>
+
                     {/* <div className="flex items-center text-slate-600">
                       <Video className="h-5 w-5 mr-2 text-amber-600" />
                       <span className="text-sm">{room.cameras} cameras</span>
@@ -382,24 +414,24 @@ const RoomManagement = () => {
                       Camera Selection
                     </Label>
                     <div className="grid grid-cols-1 gap-3 h-28 overflow-y-scroll">
-                      {DUMMY_CAMERAS.map((camera) => (
+                      {cameras.map((camera) => (
                         <div
-                          key={camera.id}
-                          className={`flex items-center p-2 rounded-xl border-2 transition-all cursor-pointer text-sm ${
-                            formData.selectedCameras.includes(camera.id)
+                          key={camera.cameraId}
+                          className={`flex items-center px-2 rounded-xl border-2 h-[50%] transition-all cursor-pointer text-sm ${
+                            formData.selectedCameras.includes(camera.cameraId)
                               ? "border-blue-500 bg-blue-50"
                               : "border-slate-200 hover:border-blue-200"
                           }`}
-                          onClick={() => handleCameraToggle(camera.id)}
+                          onClick={() => handleCameraToggle(camera.cameraId)}
                         >
                           <Checkbox
                             checked={formData.selectedCameras.includes(
-                              camera.id
+                              camera.cameraId
                             )}
                             className="h-3 w-3 rounded-lg border-2 data-[state=checked]:border-blue-600 data-[state=checked]:bg-blue-600"
                           />
                           <span className="ml-3 font-medium text-sm text-slate-700">
-                            {camera.name}
+                            {camera.cameraName}
                           </span>
                         </div>
                       ))}
