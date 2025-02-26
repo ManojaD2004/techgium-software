@@ -5,3 +5,4 @@ tmp
 python/deps
 python/__pycache__
 public/images
+metadata/jobs.json
