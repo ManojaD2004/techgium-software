@@ -16,6 +16,7 @@ import {
 import { cameraSchema, modelSchema, roomSchema } from "../types/model";
 import path from "path";
 import { spawn } from "child_process";
+import { CameraJob } from "../types/db";
 const userRouter = express.Router();
 const v1Routes = express.Router();
 const adminRoutes = express.Router();
@@ -1021,12 +1022,23 @@ type ModelFeed = {
     empName: string;
     empUserName: string;
     empId: string;
-    roomId: string;
     images: string[];
   };
 };
 
-const jobs = {};
+type JsonOutputJob = {
+  faceDetected: boolean;
+  timestamp: number;
+  headCount: number;
+  empIds: string[];
+  roomId: string;
+};
+
+const jobs: {
+  [jobName: string]: CameraJob[];
+} = {};
+
+const empData: any = {};
 
 trackRouter.post("/start", async (req, res) => {
   try {
@@ -1052,16 +1064,39 @@ trackRouter.post("/start", async (req, res) => {
       });
       return;
     }
+    if (Object.keys(jobs).length !== 0) {
+      res.status(200).send({
+        status: "success",
+        data: {
+          cameras: resCam,
+        },
+      });
+      return;
+    }
     for (const camera of resCam) {
+      const tdyDate = new Date().toLocaleDateString("en-CA");
       const jobModelData: ModelFeed = {};
       for (const emp of camera.emps) {
         jobModelData[emp.id.toString()] = {
           empName: `${emp.firstName} ${emp.lastName}`,
           empUserName: emp.userName,
-          roomId: camera.roomId?.toString() || "need roomId",
           empId: emp.id.toString(),
           images: emp.images.map((ele) => ele.imgPath || "need img path"),
         };
+        const resInsert = await modelDb.insertUserDataIfNotExists(
+          emp.id,
+          camera.cameraId,
+          tdyDate
+        );
+        if (resInsert === -1 || resInsert === null) {
+          res.status(400).send({
+            status: "fail",
+            data: {
+              message: "Could not create a job.",
+            },
+          });
+          return;
+        }
       }
       fs.writeFileSync(
         path.join(
@@ -1071,19 +1106,59 @@ trackRouter.post("/start", async (req, res) => {
         JSON.stringify(jobModelData, null, 2),
         { encoding: "utf8" }
       );
-      const command = `docker run -p 5222:5222 -v "${path.join(
-        process.cwd(),
-        "/public/images"
-      )}:/app/images" -v "${path.join(
-        process.cwd(),
-        "/model_data"
-      )}:/app/model_data" -it model-py python main_video2.py /app/model_data/${
-        camera.roomId
-      }-${camera.cameraId}.json ${camera.videoLink}`.replace(/\s+/g, " ");
-      const commandList = command.split(" ");
-      console.log(commandList);
-      // const modelJob = spawn(commandList[0], commandList.slice(1));
+      const commandList = ["docker", "run"];
+      commandList.push("-p", `${camera.port}:5222`);
+      commandList.push(
+        "-v",
+        `${path.join(process.cwd(), "/public/images")}:/app/images`
+      );
+      commandList.push(
+        "-v",
+        `${path.join(process.cwd(), "/model_data")}:/app/model_data`
+      );
+      commandList.push(
+        "--rm",
+        "-e",
+        "PYTHONUNBUFFERED=1",
+        "model-py",
+        "python",
+        "main_video2.py"
+      );
+      commandList.push(
+        `/app/model_data/${camera.roomId}-${camera.cameraId}.json`,
+        `${camera.videoLink}`,
+        `${camera.roomId}`
+      );
+      console.log(commandList[0], commandList.slice(1));
+      const modelJob = spawn(commandList[0], commandList.slice(1));
+      // Todo:
+      // Instead of this edit the json file
+      // from python and read form nodejs
+      modelJob.stdout.on("data", async (data) => {
+        const data1 = data.toString() as string;
+        try {
+          const jsonData: JsonOutputJob = JSON.parse(data1);
+          if (jsonData.faceDetected === true) {
+            const tdyDate = new Date().toLocaleDateString("en-CA");
+            const empIds = jsonData.empIds.map((ele) => parseInt(ele));
+            const resUpdate = await modelDb.updateUserData(
+              empIds,
+              parseInt(jsonData.roomId),
+              tdyDate
+            );
+            if (resUpdate === -1 || resUpdate === null) {
+              console.log(chalk.red(`Failed to update user date: `), empIds);
+            }
+          }
+        } catch (error) {}
+      });
     }
+    jobs[jobName] = resCam;
+    fs.writeFileSync(
+      path.join(process.cwd(), `/metadata/jobs.json`),
+      JSON.stringify(jobs, null, 2),
+      { encoding: "utf8" }
+    );
     res.status(200).send({
       status: "success",
       data: {
@@ -1104,10 +1179,38 @@ trackRouter.post("/start", async (req, res) => {
   }
 });
 
-trackRouter.post("/stop/:jobname", async (req, res) => {
+trackRouter.get("/get", async (req, res) => {
   try {
-    const jobName = faker.company.buzzNoun();
-    const model = spawn("docker", ["run"]);
+    // const jobs: {
+    //   [jobName: string]: CameraJob;
+    // } = JSON.parse(
+    //   fs.readFileSync(path.join(process.cwd(), `/metadata/jobs.json`), {
+    //     encoding: "utf8",
+    //   })
+    // );
+    res.status(200).send({
+      status: "success",
+      data: {
+        cameras: jobs[Object.keys(jobs)[0]],
+      },
+    });
+  } catch (error: any) {
+    console.log(
+      chalk.red(`Error: ${error?.message}, for user id ${req.body?.userId}`)
+    );
+    res.status(400).send({
+      status: "fail",
+      error: error,
+      data: {
+        message: "Internal Server Error!",
+      },
+    });
+  }
+});
+
+trackRouter.post("/stop", async (req, res) => {
+  try {
+    
   } catch (error: any) {
     console.log(
       chalk.red(`Error: ${error?.message}, for user id ${req.body?.userId}`)

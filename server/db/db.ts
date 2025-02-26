@@ -1145,15 +1145,23 @@ class ModelDBv1 extends DB {
         const res = await pClient.query(
           `
           SELECT 
-            "id" as "cameraId",
-            "ip",
-            "video_link" as "videoLink",
-            "tracker_port" as "port",
-            "camera_name" as "cameraName",
-            "room_id" as "roomId"
+            c."id" as "cameraId",
+            c."ip",
+            c."video_link" as "videoLink",
+            c."tracker_port" as "port",
+            c."camera_name" as "cameraName",
+            c."room_id" as "roomId",
+            r."room_name" as "roomName",
+            r."max_head_count" as "maxHeadCount",
+            r."model_id" as "modelId",
+            m."model_name" as "modelName"
           FROM 
-            "cameras"
-          WHERE "room_id" IS NOT NULL;
+            "cameras" as c
+          INNER JOIN "rooms" as r ON
+            r."id" = c."room_id"
+          INNER JOIN "model" as m ON
+            m."id" = r."model_id"
+          WHERE c."room_id" IS NOT NULL;
           `
         );
         if (res.rowCount === 0) {
@@ -1265,7 +1273,7 @@ class ModelDBv1 extends DB {
         }
         const res = await pClient.query(
           `
-         INSERT INTO "employee_data ("employee_id", 
+         INSERT INTO "employee_data" ("employee_id", 
          "room_id", "date") 
          VALUES ($1::int, $2::int, $3::date) RETURNING id;`,
           [employeeId, roomId, date]
@@ -1278,6 +1286,49 @@ class ModelDBv1 extends DB {
         return {
           employeeId,
         };
+      } catch (error: any) {
+        console.log(
+          chalk.red("PostgresSQL Error: "),
+          error?.message,
+          error?.code
+        );
+        if (pClient) {
+          await pClient.query("ROLLBACK");
+        }
+        return null;
+      } finally {
+        if (pClient) {
+          this.release(pClient);
+        }
+      }
+    });
+  }
+  async updateUserData(employeeIds: number[], roomId: number, date: string) {
+    return await this.retryQuery("updateUserData", async () => {
+      let pClient;
+      try {
+        pClient = await this.connect();
+        await pClient.query("BEGIN");
+        const resCheck = await pClient.query(
+          format(
+            `
+          UPDATE "employee_data"
+          SET "total_hours_spent" = "total_hours_spent" + 10
+          WHERE
+          "room_id" = $1::int AND
+          "date" = $2::date AND
+          "employee_id" IN (%L)
+          `,
+            employeeIds
+          ),
+          [roomId, date]
+        );
+        if (resCheck.rowCount === 0) {
+          await pClient.query("ROLLBACK");
+          return -1;
+        }
+        await pClient.query("COMMIT");
+        return true;
       } catch (error: any) {
         console.log(
           chalk.red("PostgresSQL Error: "),

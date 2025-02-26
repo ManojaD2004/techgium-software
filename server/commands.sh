@@ -23,3 +23,7 @@ pm2 reload server
 
 # Python
 docker build -t model-py -f dockerfile.python ./
+
+# Todo:
+# Instead of this edit the json file
+# from python and read form nodejs

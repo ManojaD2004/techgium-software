@@ -33,6 +33,10 @@ type Camera = {
 };
 
 type CameraJob = Camera & {
+  roomName: string;
+  maxHeadCount: number;
+  modelId: number;
+  modelName: string;
   emps: GetEmployeeProfile[];
 };
 
