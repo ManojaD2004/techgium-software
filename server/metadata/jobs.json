@@ -1,34 +1,34 @@
 {
-  "channels": [
+  "partnerships": [
     {
-      "cameraId": 1,
-      "ip": "http://192.168.1.7:4747",
-      "videoLink": "http://192.168.1.7:4747/video",
-      "port": 5222,
-      "cameraName": "Mobile Camera",
-      "roomId": 1,
-      "roomName": "CS Lab",
+      "cameraId": 7,
+      "ip": "http://192.168.1.33:4747",
+      "videoLink": "http://192.168.1.33:4747/video",
+      "port": 5224,
+      "cameraName": "Mobile Camera 4",
+      "roomId": 6,
+      "roomName": "CS LAB",
       "maxHeadCount": 9999,
       "modelId": 1,
       "modelName": "hog",
       "emps": [
         {
-          "id": 7,
-          "userName": "manoja-d-15cf3f",
-          "firstName": "Manoja",
-          "lastName": "D",
-          "imgURL": "/file/v1/image/f50fc2.jpg",
-          "phoneNumber": "9902798895",
+          "id": 2,
+          "userName": "vilas-cp-a2998e",
+          "firstName": "Vilas",
+          "lastName": "CP",
+          "imgURL": "/file/v1/image/8e9e49.jpeg",
+          "phoneNumber": "9845263712",
           "images": [
             {
               "id": 1,
-              "createdAt": "2025-02-26T12:33:18.727Z",
-              "imgPath": "./images/f50fc2.jpg"
+              "createdAt": "2025-02-26T21:46:13.044Z",
+              "imgPath": "./images/8e9e49.jpeg"
             },
             {
               "id": 2,
-              "createdAt": "2025-02-26T12:33:18.896Z",
-              "imgPath": "./images/242ad1.jpg"
+              "createdAt": "2025-02-26T21:46:13.057Z",
+              "imgPath": "./images/f29435.jpeg"
             }
           ]
         }
