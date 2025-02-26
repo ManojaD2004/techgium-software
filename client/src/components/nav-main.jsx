@@ -18,8 +18,8 @@ const navMain = [
     isActive: true,
   },
   {
-    title: "Models",
-    url: "/admin/model",
+    title: "Camera",
+    url: "/admin/camera",
     icon: Bot,
   },
   {

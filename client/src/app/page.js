@@ -9,6 +9,7 @@ import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 import { X, User, Settings } from "lucide-react";
 import toast from "react-hot-toast";
+import API_LINK from "./backendLink/link";
 
 export default function Home() {
   const [adminFormOpen, setAdminFormOpen] = useState(false);
@@ -85,7 +86,7 @@ function AdminLoginForm({ isOpen, onClose }) {
       const userName = username;
 
       const response = await fetch(
-        "https://profound-adequate-salmon.ngrok-free.app/user/v1/login/admin",
+        `${API_LINK}/user/v1/login/admin`,
         {
           method: "POST",
           headers: {

@@ -28,14 +28,11 @@ import { Progress } from "@/components/ui/progress";
 import { Label } from "@/components/ui/label";
 import { Skeleton } from "@/components/ui/skeleton";
 import { toast } from "react-hot-toast";
+import API_LINK from "@/app/backendLink/link";
 
-const API_URL = "https://profound-adequate-salmon.ngrok-free.app";
+const API_URL = API_LINK;
 
-const DUMMY_CAMERAS = [
-  { id: 1, name: "CAM-101 (North Entrance)" },
-  { id: 2, name: "CAM-102 (Lobby)" },
-  { id: 3, name: "CAM-103 (Hallway A)" },
-];
+
 
 const RoomManagement = () => {
   const [isDialogOpen, setIsDialogOpen] = useState(false);
@@ -72,6 +69,9 @@ const RoomManagement = () => {
 
         const data = await response.json();
         setRooms(data.data.rooms);
+        console.log(data);
+        
+
       } catch (error) {
         toast.error("Failed to load rooms");
       } finally {
@@ -286,7 +286,7 @@ const RoomManagement = () => {
               <Skeleton key={i} className="h-48 rounded-2xl" />
             ))}
           </div>
-        ) : rooms.length > 0 ? (
+        ) : rooms?.length > 0 ? (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
             {rooms.map((room) => (
               <Card
