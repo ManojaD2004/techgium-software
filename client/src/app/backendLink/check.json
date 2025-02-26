@@ -1,0 +1,41 @@
+{
+    "status": "success",
+    "data": {
+        "cameras": [{
+         
+                "cameraId": 1,
+                "ip": "http://192.168.1.7:4747",
+                "videoLink": "http://192.168.1.7:4747/video",
+                "port": 5222,
+                "cameraName": "Mobile Camera",
+                "roomId": 1,
+                "roomName": "CS Lab",
+                "maxHeadCount": 9999,
+                "modelId": 1,
+                "modelName": "hog",
+                "emps": [
+                    {
+                        "id": 7,
+                        "userName": "manoja-d-15cf3f",
+                        "firstName": "Manoja",
+                        "lastName": "D",
+                        "imgURL": "/file/v1/image/f50fc2.jpg",
+                        "phoneNumber": "9902798895",
+                        "images": [
+                            {
+                                "id": 1,
+                                "createdAt": "2025-02-26T12:33:18.727Z",
+                                "imgPath": "./images/f50fc2.jpg"
+                            },
+                            {
+                                "id": 2,
+                                "createdAt": "2025-02-26T12:33:18.896Z",
+                                "imgPath": "./images/242ad1.jpg"
+                            }
+                        ]
+                    }
+                ]
+            
+        }]
+    }
+}

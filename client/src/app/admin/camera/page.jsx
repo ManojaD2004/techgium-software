@@ -1,9 +1,11 @@
 import React from 'react'
 
+import CameraDashboard from './components/Mainsection'
+
 const Page = () => {
   return (
     <div>
-      Page
+      <CameraDashboard/>
     </div>
   )
 }

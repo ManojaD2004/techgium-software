@@ -20,8 +20,9 @@ import {
 import { Card, CardContent } from "../../../../components/ui/card";
 import { Search, Plus, User, Camera, Loader2, X } from "lucide-react";
 import { toast } from "react-hot-toast";
+import API_LINK from "@/app/backendLink/link";
 
-const API_URL = "https://profound-adequate-salmon.ngrok-free.app";
+const API_URL = API_LINK;
 
 const fetchEmployees = async (query = "") => {
   try {
