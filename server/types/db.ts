@@ -1,4 +1,4 @@
-import { GetEmployeeProfile } from "./user";
+import { GetEmployeeProfile, GetEmployeeProfileWithoutImg } from "./user";
 
 type Ping = {
   pong: string;
@@ -20,7 +20,7 @@ type Room = AdminUser & {
   modelId: number;
   modelName: string;
   cameras: Camera[];
-  employees: GetEmployeeProfile[];
+  employees: GetEmployeeProfileWithoutImg[];
 };
 
 type Camera = {
@@ -30,6 +30,10 @@ type Camera = {
   ip: string;
   port: number;
   roomId: number | null;
+};
+
+type CameraJob = Camera & {
+  emps: GetEmployeeProfile[];
 };
 
 type Model = AdminUser & {
@@ -42,7 +46,8 @@ type Model = AdminUser & {
 type ModelEmployeeImg = {
   createdAt: string;
   id: number;
-  publicLink: string;
+  publicLink?: string;
+  imgPath?: string;
 };
 
-export type { Ping, Room, Camera, Model, ModelEmployeeImg };
+export type { Ping, Room, Camera, Model, ModelEmployeeImg, CameraJob };

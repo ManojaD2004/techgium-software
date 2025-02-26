@@ -172,7 +172,7 @@ def main():
     c = data1
     sfr = SimpleFacerec()
     sfr.load_encoding_images(c)
-    stream_url = "http://192.168.1.7:4747/video"
+    stream_url = sys.argv[2]
     try:
         video_stream = ThreadedVideoStream(stream_url).start()
     except Exception as e:

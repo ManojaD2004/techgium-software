@@ -23,6 +23,12 @@ type GetEmployeeProfile = EmployeeProfile & {
   images: ModelEmployeeImg[]
 };
 
+type GetEmployeeProfileWithoutImg = EmployeeProfile & {
+  id: number;
+  userName: string;
+  imgURL: string;
+};
+
 type GetModelEmployee = EmployeeProfile & {
   id: number;
   employeeId: number;
@@ -68,4 +74,5 @@ export type {
   AdminProfile,
   GetEmployeeProfile,
   GetModelEmployee,
+  GetEmployeeProfileWithoutImg,
 };

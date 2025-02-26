@@ -1,7 +1,14 @@
 import chalk from "chalk";
 import { Pool, PoolClient } from "pg";
 import { v4 } from "uuid";
-import { Camera, Model, ModelEmployeeImg, Ping, Room } from "../types/db";
+import {
+  Camera,
+  CameraJob,
+  Model,
+  ModelEmployeeImg,
+  Ping,
+  Room,
+} from "../types/db";
 import { getRandomInteger } from "../helpers/randomNumber";
 import { dbConfigs } from "../configs/configs";
 import { waitForNSeconds } from "../helpers/wait";
@@ -10,6 +17,7 @@ import {
   AdminProfile,
   EmployeeProfile,
   GetEmployeeProfile,
+  GetEmployeeProfileWithoutImg,
 } from "../types/user";
 import { RoomData } from "../types/model";
 import format from "pg-format";
@@ -540,7 +548,7 @@ class TrackerDBv1 extends DB {
           if (resEmp.rowCount === 0) {
             return -1;
           }
-          const empData: GetEmployeeProfile[] = resEmp.rows;
+          const empData: GetEmployeeProfileWithoutImg[] = resEmp.rows;
           room.employees = empData;
           const resCamera = await pClient.query(
             `
@@ -1056,60 +1064,6 @@ class ModelDBv1 extends DB {
       }
     });
   }
-  async addEmployeeData(employeeId: number, roomId: number, date: string) {
-    return await this.retryQuery("addEmployeeData", async () => {
-      let pClient;
-      try {
-        pClient = await this.connect();
-        await pClient.query("BEGIN");
-        const resCheck = await pClient.query(
-          `
-          SELECT "id" FROM "employee_data"
-          WHERE 
-            "room_id" = $1::int AND
-            "date" = $2::date
-          `,
-          [roomId, date]
-        );
-        if (resCheck.rowCount !== 0) {
-          await pClient.query("ROLLBACK");
-          return {
-            employeeData: resCheck.rows,
-          };
-        }
-        const res = await pClient.query(
-          `
-         INSERT INTO "employee_data ("employee_id", 
-         "room_id", "date") 
-         VALUES ($1::int, $2::int, $3::date) RETURNING id;`,
-          [employeeId, roomId, date]
-        );
-        if (res.rowCount !== 1) {
-          await pClient.query("ROLLBACK");
-          return -1;
-        }
-        const modelData = {
-          roomId: res.rows[0].id as number,
-        };
-        await pClient.query("COMMIT");
-        return modelData;
-      } catch (error: any) {
-        console.log(
-          chalk.red("PostgresSQL Error: "),
-          error?.message,
-          error?.code
-        );
-        if (pClient) {
-          await pClient.query("ROLLBACK");
-        }
-        return null;
-      } finally {
-        if (pClient) {
-          this.release(pClient);
-        }
-      }
-    });
-  }
   async updateEmployeeData(employeeDataId: number, totalHoursSpent: number) {
     return await this.retryQuery("updateEmployeeData", async () => {
       let pClient;
@@ -1174,6 +1128,165 @@ class ModelDBv1 extends DB {
           error?.message,
           error?.code
         );
+        return null;
+      } finally {
+        if (pClient) {
+          this.release(pClient);
+        }
+      }
+    });
+  }
+  async getCamerasForJob() {
+    return await this.retryQuery("getCamerasForJob", async () => {
+      let pClient;
+      try {
+        pClient = await this.connect();
+        await pClient.query("BEGIN");
+        const res = await pClient.query(
+          `
+          SELECT 
+            "id" as "cameraId",
+            "ip",
+            "video_link" as "videoLink",
+            "tracker_port" as "port",
+            "camera_name" as "cameraName",
+            "room_id" as "roomId"
+          FROM 
+            "cameras"
+          WHERE "room_id" IS NOT NULL;
+          `
+        );
+        if (res.rowCount === 0) {
+          await pClient.query("ROLLBACK");
+          return -2;
+        }
+        const cameraData: CameraJob[] = res.rows;
+        const roomEmps: { [roomId: number]: GetEmployeeProfile[] } = {};
+        for (const camera of cameraData) {
+          if (!camera.roomId) {
+            await pClient.query("ROLLBACK");
+            return -1;
+          }
+          if (camera.roomId in roomEmps) {
+            camera.emps = roomEmps[camera.roomId];
+            continue;
+          }
+          const resEmp = await pClient.query(
+            `
+          SELECT 
+            u."id",
+            u."user_name" as "userName",
+            u."first_name" as "firstName",
+            u."last_name" as "lastName",
+            u."img_URL" as "imgURL",
+            u."phone_no" as "phoneNumber"
+          FROM 
+            "room_employee" as re 
+          INNER JOIN "users" as u ON
+            re."employee_id" = u."id"
+            AND u."type" = 'employee'
+          WHERE re."room_id" = $1::int;`,
+            [camera.roomId]
+          );
+          if (resEmp.rowCount === 0) {
+            await pClient.query("ROLLBACK");
+            return -1;
+          }
+          const userData: GetEmployeeProfile[] = resEmp.rows;
+          for (const user of userData) {
+            const resImg = await pClient.query(
+              `
+            SELECT 
+              mei."id",
+              mei."created_at" as "createdAt",
+              mei."img_path" as "imgPath"
+            FROM "employee_img" as mei
+            WHERE 
+              mei."employee_id" = $1::int
+            ORDER BY 
+              mei."created_at";
+            `,
+              [user.id]
+            );
+            if (resImg.rowCount === 0) {
+              await pClient.query("ROLLBACK");
+              return -1;
+            }
+            const imgData: ModelEmployeeImg[] = resImg.rows;
+            user.images = imgData;
+          }
+          camera.emps = userData;
+          roomEmps[camera.roomId] = userData;
+        }
+        await pClient.query("COMMIT");
+        return cameraData;
+      } catch (error: any) {
+        console.log(
+          chalk.red("PostgresSQL Error: "),
+          error?.message,
+          error?.code
+        );
+        if (pClient) {
+          await pClient.query("ROLLBACK");
+        }
+        return null;
+      } finally {
+        if (pClient) {
+          this.release(pClient);
+        }
+      }
+    });
+  }
+  async insertUserDataIfNotExists(
+    employeeId: number,
+    roomId: number,
+    date: string
+  ) {
+    return await this.retryQuery("insertUserDataIfNotExists", async () => {
+      let pClient;
+      try {
+        pClient = await this.connect();
+        await pClient.query("BEGIN");
+        const resCheck = await pClient.query(
+          `
+          SELECT "id" FROM "employee_data"
+          WHERE 
+            "room_id" = $1::int AND
+            "date" = $2::date AND
+            "employee_id" = $3::int
+          `,
+          [roomId, date, employeeId]
+        );
+        if (resCheck.rowCount === 1) {
+          await pClient.query("ROLLBACK");
+          return {
+            employeeId,
+          };
+        }
+        const res = await pClient.query(
+          `
+         INSERT INTO "employee_data ("employee_id", 
+         "room_id", "date") 
+         VALUES ($1::int, $2::int, $3::date) RETURNING id;`,
+          [employeeId, roomId, date]
+        );
+        if (res.rowCount !== 1) {
+          await pClient.query("ROLLBACK");
+          return -1;
+        }
+        await pClient.query("COMMIT");
+        return {
+          employeeId,
+        };
+      } catch (error: any) {
+        console.log(
+          chalk.red("PostgresSQL Error: "),
+          error?.message,
+          error?.code
+        );
+        if (pClient) {
+          await pClient.query("ROLLBACK");
+        }
         return null;
       } finally {
         if (pClient) {

@@ -6,6 +6,8 @@ import { ModelDBv1, SessionDB, TrackerDBv1, UserDBv1 } from "../db/db";
 import { serverConfigs } from "../configs/configs";
 import { v4 } from "uuid";
 import { Cookies, SessionId } from "../types/auth";
+import { faker } from "@faker-js/faker";
+import fs from "fs";
 import {
   adminProfileSchema,
   ClerkInfo,
@@ -13,6 +15,7 @@ import {
 } from "../types/user";
 import { cameraSchema, modelSchema, roomSchema } from "../types/model";
 import path from "path";
+import { spawn } from "child_process";
 const userRouter = express.Router();
 const v1Routes = express.Router();
 const adminRoutes = express.Router();
@@ -297,7 +300,7 @@ v1Routes.post(
           await file.mv(pathString);
           const resImg = await modelDb.addEmployeeImgPath(
             resDb.primaryId,
-            `/images/${fileName}.${fileExt}`,
+            `./images/${fileName}.${fileExt}`,
             `/file/v1/image/${fileName}.${fileExt}`
           );
           if (resImg === -1 || resImg === null) {
@@ -340,7 +343,7 @@ v1Routes.post(
         await file.mv(pathString);
         const resImg = await modelDb.addEmployeeImgPath(
           resDb.primaryId,
-          `/images/${fileName}.${fileExt}`,
+          `./images/${fileName}.${fileExt}`,
           `/file/v1/image/${fileName}.${fileExt}`
         );
         if (resImg === -1 || resImg === null) {
@@ -829,18 +832,6 @@ adminRoutes.get("/get/models", async (req, res) => {
       });
       return;
     }
-    for (const model of resModel) {
-      const modelEmp = await trackerDb.getModels();
-      if (modelEmp === null) {
-        res.status(400).send({
-          status: "fail",
-          data: {
-            message: "The database is offline",
-          },
-        });
-        return;
-      }
-    }
     res.status(200).send({
       status: "success",
       data: {
@@ -1025,9 +1016,98 @@ trackRouter.get("/live/:port", async (req, res) => {
   }
 });
 
+type ModelFeed = {
+  [empId: string]: {
+    empName: string;
+    empUserName: string;
+    empId: string;
+    roomId: string;
+    images: string[];
+  };
+};
+
+const jobs = {};
+
 trackRouter.post("/start", async (req, res) => {
   try {
-    
+    const jobName = faker.company.buzzNoun();
+    console.log(jobName);
+    const modelDb = new ModelDBv1();
+    const resCam = await modelDb.getCamerasForJob();
+    if (resCam === -1 || resCam === null) {
+      res.status(400).send({
+        status: "fail",
+        data: {
+          message: "Could not get data, or the database is offline",
+        },
+      });
+      return;
+    }
+    if (resCam === -2) {
+      res.status(400).send({
+        status: "fail",
+        data: {
+          message: "Need min one room to be crated and have a camera in that.",
+        },
+      });
+      return;
+    }
+    for (const camera of resCam) {
+      const jobModelData: ModelFeed = {};
+      for (const emp of camera.emps) {
+        jobModelData[emp.id.toString()] = {
+          empName: `${emp.firstName} ${emp.lastName}`,
+          empUserName: emp.userName,
+          roomId: camera.roomId?.toString() || "need roomId",
+          empId: emp.id.toString(),
+          images: emp.images.map((ele) => ele.imgPath || "need img path"),
+        };
+      }
+      fs.writeFileSync(
+        path.join(
+          process.cwd(),
+          `/model_data/${camera.roomId}-${camera.cameraId}.json`
+        ),
+        JSON.stringify(jobModelData, null, 2),
+        { encoding: "utf8" }
+      );
+      const command = `docker run -p 5222:5222 -v "${path.join(
+        process.cwd(),
+        "/public/images"
+      )}:/app/images" -v "${path.join(
+        process.cwd(),
+        "/model_data"
+      )}:/app/model_data" -it model-py python main_video2.py /app/model_data/${
+        camera.roomId
+      }-${camera.cameraId}.json ${camera.videoLink}`.replace(/\s+/g, " ");
+      const commandList = command.split(" ");
+      console.log(commandList);
+      // const modelJob = spawn(commandList[0], commandList.slice(1));
+    }
+    res.status(200).send({
+      status: "success",
+      data: {
+        cameras: resCam,
+      },
+    });
+  } catch (error: any) {
+    console.log(
+      chalk.red(`Error: ${error?.message}, for user id ${req.body?.userId}`)
+    );
+    res.status(400).send({
+      status: "fail",
+      error: error,
+      data: {
+        message: "Internal Server Error!",
+      },
+    });
+  }
+});
+
+trackRouter.post("/stop/:jobname", async (req, res) => {
+  try {
+    const jobName = faker.company.buzzNoun();
+    const model = spawn("docker", ["run"]);
   } catch (error: any) {
     console.log(
       chalk.red(`Error: ${error?.message}, for user id ${req.body?.userId}`)
