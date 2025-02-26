@@ -1046,7 +1046,7 @@ trackRouter.post("/start", async (req, res) => {
     console.log(jobName);
     const modelDb = new ModelDBv1();
     const resCam = await modelDb.getCamerasForJob();
-    console.log(resCam);
+    // console.log(resCam);
     if (resCam === -1 || resCam === null) {
       res.status(400).send({
         status: "fail",
@@ -1137,6 +1137,7 @@ trackRouter.post("/start", async (req, res) => {
       // from python and read form nodejs
       modelJob.stdout.on("data", async (data) => {
         const data1 = data.toString() as string;
+        console.log(data1)
         try {
           const jsonData: JsonOutputJob = JSON.parse(data1);
           if (jsonData.faceDetected === true) {
