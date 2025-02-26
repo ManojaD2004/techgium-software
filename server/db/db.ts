@@ -461,7 +461,7 @@ class TrackerDBv1 extends DB {
       }
     });
   }
-  async getAssignedCameras() {
+  async getCameras() {
     return await this.retryQuery("getAssignedCameras", async () => {
       let pClient;
       try {
@@ -469,15 +469,14 @@ class TrackerDBv1 extends DB {
         const res = await pClient.query(
           `
           SELECT 
-            c."camera_name" as "cameraName",
-            c."id" as "cameraId",
-            r."room_name" as "roomName",
-            r."id" as "roomId",
+            "id" as "cameraId",
+            "ip",
+            "video_link" as "videoLink",
+            "tracker_port" as "port",
+            "camera_name" as "cameraName",
+            "room_id" as "roomId"
           FROM 
-            "cameras" as c 
-          LEFT JOIN 
-            "rooms" as r
-            ON c."room_id" = r."id"`
+            "cameras"`
         );
         const cameraData: Camera[] = res.rows;
         return cameraData;
@@ -519,6 +518,50 @@ class TrackerDBv1 extends DB {
         };
         await pClient.query("COMMIT");
         return roomData;
+      } catch (error: any) {
+        console.log(
+          chalk.red("PostgresSQL Error: "),
+          error?.message,
+          error?.code
+        );
+        if (pClient) {
+          await pClient.query("ROLLBACK");
+        }
+        return null;
+      } finally {
+        if (pClient) {
+          this.release(pClient);
+        }
+      }
+    });
+  }
+  async createCamera(
+    cameraName: string,
+    ip: string,
+    videoLink: string,
+    trackerPort: number
+  ) {
+    return await this.retryQuery("createCamera", async () => {
+      let pClient;
+      try {
+        pClient = await this.connect();
+        await pClient.query("BEGIN");
+        const res = await pClient.query(
+          `
+         INSERT INTO "cameras" ("camera_name", "ip",
+         "video_link", "tracker_port") 
+         VALUES ($1::varchar, $2::varchar, $3::varchar, $4::int) RETURNING id;`,
+          [cameraName, ip, videoLink, trackerPort]
+        );
+        if (res.rowCount !== 1) {
+          await pClient.query("ROLLBACK");
+          return -1;
+        }
+        const cameraData = {
+          cameraId: res.rows[0].id as number,
+        };
+        await pClient.query("COMMIT");
+        return cameraData;
       } catch (error: any) {
         console.log(
           chalk.red("PostgresSQL Error: "),
@@ -808,7 +851,11 @@ class ModelDBv1 extends DB {
       }
     });
   }
-  async addEmployeeImgPath(employeeId: number, imgPath: string) {
+  async addEmployeeImgPath(
+    employeeId: number,
+    imgPath: string,
+    publicLink: string
+  ) {
     return await this.retryQuery("addEmployeeImgPath", async () => {
       let pClient;
       try {
@@ -817,11 +864,22 @@ class ModelDBv1 extends DB {
         const res = await pClient.query(
           `
          INSERT INTO "employee_img" ("employee_id", 
-         "img_path") 
-         VALUES ($1::int, $2::varchar) RETURNING id;`,
-          [employeeId, imgPath]
+         "img_path", "public_link") 
+         VALUES ($1::int, $2::varchar, $3::varchar) RETURNING id;`,
+          [employeeId, imgPath, publicLink]
         );
         if (res.rowCount !== 1) {
+          await pClient.query("ROLLBACK");
+          return -1;
+        }
+        const resUpdate = await pClient.query(
+          `
+         UPDATE "users" SET
+         "total_img_uploaded" = "total_img_uploaded" + 1
+         WHERE "id" = $1::int RETURNING id;`,
+          [employeeId]
+        );
+        if (resUpdate.rowCount !== 1) {
           await pClient.query("ROLLBACK");
           return -1;
         }
@@ -855,9 +913,9 @@ class ModelDBv1 extends DB {
         const res = await pClient.query(
           `
          SELECT 
-          mei."img_path" as "imgPath",
           mei."id",
-          mei."created_at" as "createdAt"
+          mei."created_at" as "createdAt",
+          mei."public_link" as "publicLink"
          FROM "employee_img" as mei
          WHERE 
           mei."employee_id" = $1::int

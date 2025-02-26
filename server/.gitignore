@@ -3,3 +3,4 @@ build
 .env*.local
 tmp
 python
+public/images

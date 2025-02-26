@@ -19,13 +19,16 @@ type Room = AdminUser & {
   maxHeadCount?: number;
   modelId: number | null;
   modelName: string | null;
-  cameras: Camera[]
+  cameras: Camera[];
 };
 
 type Camera = {
   cameraId: number;
   cameraName: string;
   videoLink: string;
+  ip: string;
+  port: number;
+  roomId: number | null;
 };
 
 type Model = AdminUser & {
@@ -38,7 +41,7 @@ type Model = AdminUser & {
 type ModelEmployeeImg = {
   createdAt: string;
   id: number;
-  imgPath: string;
+  publicLink: string;
 };
 
 export type { Ping, Room, Camera, Model, ModelEmployeeImg };

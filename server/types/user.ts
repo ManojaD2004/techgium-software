@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { ModelEmployeeImg } from "./db";
 
 type ClerkInfo = {
   clerkId?: string;
@@ -18,6 +19,7 @@ type GetEmployeeProfile = EmployeeProfile & {
   id: number;
   userName: string;
   imgURL: string;
+  images: ModelEmployeeImg[]
 };
 
 type GetModelEmployee = EmployeeProfile & {
@@ -45,6 +47,7 @@ const employeeProfileSchema = z.object({
   firstName: z.string(),
   lastName: z.string(),
   phoneNumber: z.string(),
+  password: z.string(),
 });
 
 const adminProfileSchema = z.object({

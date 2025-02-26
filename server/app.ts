@@ -11,9 +11,9 @@ import morgan from "morgan";
 import chalk from "chalk";
 import { MemCache } from "./cache/redis";
 import { DB } from "./db/db";
-import { rateLimitMiddleWare } from "./middlewares/rateLimiting";
 import compression from "compression";
 import { trackRouter } from "./track/route";
+import { fileRouter } from "./file/route";
 
 const { COOKIE_SECRET } = envConfigs;
 const { CORS_ORIGIN } = serverConfigs;
@@ -40,13 +40,13 @@ app.use(express.json());
 app.use(cookieParser(COOKIE_SECRET));
 app.use(morgan("dev"));
 app.use(hitMiddleWare);
-// app.use(rateLimitMiddleWare);
 // app.use(authMiddleWare);
 
 // Routes
 app.use("/user", userRouter);
 app.use("/dev", devRouter);
 app.use("/track", trackRouter);
+app.use("/file", fileRouter);
 
 app.get("/hello", (_, res) => {
   try {
@@ -99,7 +99,7 @@ app.get("/", async (req, res) => {
         cacheRes,
         message: "Express JS Server is Running!",
         extra: `Serving form process ${process.pid}`,
-        cookies: req.signedCookies
+        cookies: req.signedCookies,
       },
     });
   } catch (error) {

@@ -18,6 +18,18 @@ const roomSchema = z.object({
   employees: z.number().int().array(),
 });
 
+const cameraSchema = z.object({
+  cameraName: z.string(),
+  ip: z.string(),
+  videoLink: z.string(),
+  port: z.number().int(),
+});
+
+const modelSchema = z.object({
+ modelName: z.string(),
+  modelDesc: z.string(),
+});
+
 export type { EmployeeData };
 
-export { roomSchema };
+export { roomSchema, cameraSchema, modelSchema };

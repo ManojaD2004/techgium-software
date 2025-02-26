@@ -7,7 +7,6 @@ const {
   SESSION_EXPIRE_TIME_IN_DAYS,
   DB_CONNECTION_MAX_RETRY,
   DB_CONNECTION_RETRY_WAIT_TIME_IN_SEC,
-  RATE_LIMIT_TIME_IN_MIN,
 } = serverConfigs;
 class MemCache {
   static client: RedisClientType;
@@ -148,73 +147,4 @@ class ClerkCache extends MemCache {
   }
 }
 
-class RateLimitCache extends MemCache {
-  async incrementCountByClerkUserId(userId: string) {
-    try {
-      if (!this.isReady()) {
-        this.connect();
-        return null;
-      }
-      const mClient = this.getCacheInstance();
-      const res = await mClient.incrBy(`rl:${userId}`, 1);
-      if (res === null) {
-        return -1;
-      }
-      return res.toString();
-    } catch (error: any) {
-      console.log(
-        chalk.red("Redis Command Error: "),
-        error?.message,
-        error?.code
-      );
-      return null;
-    }
-  }
-  async getCountByClerkUserId(userId: string) {
-    try {
-      if (!this.isReady()) {
-        this.connect();
-        return null;
-      }
-      const mClient = this.getCacheInstance();
-      const res = await mClient.get(`rl:${userId}`);
-      if (res === null) {
-        return -1;
-      }
-      return res;
-    } catch (error: any) {
-      console.log(
-        chalk.red("Redis Command Error: "),
-        error?.message,
-        error?.code
-      );
-      return null;
-    }
-  }
-  async setCountByClerkUserId(userId: string) {
-    try {
-      if (!this.isReady()) {
-        this.connect();
-        return null;
-      }
-      const mClient = this.getCacheInstance();
-      const res = await mClient.set(`rl:${userId}`, 1, {
-        EX: 60 * RATE_LIMIT_TIME_IN_MIN, // in seconds
-        NX: true,
-      });
-      if (res === null) {
-        return -1;
-      }
-      return res;
-    } catch (error: any) {
-      console.log(
-        chalk.red("Redis Command Error: "),
-        error?.message,
-        error?.code
-      );
-      return null;
-    }
-  }
-}
-
-export { MemCache, ClerkCache, RateLimitCache };
+export { MemCache, ClerkCache };

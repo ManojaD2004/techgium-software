@@ -3,13 +3,12 @@ import { DB } from "./db/db";
 import { MemCache } from "./cache/redis";
 import { app } from "./app";
 import { envConfigs, serverConfigs } from "./configs/configs";
+import fs from "fs";
+import path from "path";
 
 async function main() {
   try {
-    const {
-      DB_CONNECTION_URL,
-      CACHE_CONNECTION_URL,
-    } = envConfigs;
+    const { DB_CONNECTION_URL, CACHE_CONNECTION_URL } = envConfigs;
     const PORT = process.env?.PORT || 9000;
     const { JOB_INTERVAL_HOUR } = serverConfigs;
 
@@ -42,6 +41,11 @@ async function main() {
 
     app.listen(PORT, async () => {
       console.log(chalk.greenBright(`Server listening to Port: ${PORT}`));
+      // Init folder creation
+      const pathImage = path.join(process.cwd(), "/public/images");
+      if (!fs.existsSync(pathImage)) {
+        fs.mkdirSync(pathImage, { recursive: true });
+      }
     });
     process.on("SIGINT", async () => {
       console.log(chalk.red("Shutting down Process..."));

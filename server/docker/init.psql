@@ -50,8 +50,10 @@ CREATE TABLE
   "cameras" (
     "id" SERIAL PRIMARY KEY,
     "camera_name" varchar UNIQUE NOT NULL,
-    "room_id" int NOT NULL,
+    "room_id" int,
+    "ip" varchar NOT NULL,
     "video_link" varchar NOT NULL,
+    "tracker_port" int UNIQUE NOT NULL,
     "created_at" timestamptz DEFAULT (CURRENT_TIMESTAMP)
   );
 
@@ -77,6 +79,7 @@ CREATE TABLE
     "id" SERIAL PRIMARY KEY,
     "employee_id" int NOT NULL,
     "img_path" varchar NOT NULL,
+    "public_link" varchar NOT NULL,
     "created_at" timestamptz DEFAULT (CURRENT_TIMESTAMP),
     UNIQUE ("employee_id", "img_path")
   );
