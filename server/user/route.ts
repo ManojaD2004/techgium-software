@@ -1046,6 +1046,7 @@ trackRouter.post("/start", async (req, res) => {
     console.log(jobName);
     const modelDb = new ModelDBv1();
     const resCam = await modelDb.getCamerasForJob();
+    console.log(resCam);
     if (resCam === -1 || resCam === null) {
       res.status(400).send({
         status: "fail",
