@@ -1086,7 +1086,7 @@ trackRouter.post("/start", async (req, res) => {
         };
         const resInsert = await modelDb.insertUserDataIfNotExists(
           emp.id,
-          camera.cameraId,
+          camera.roomId || -1,
           tdyDate
         );
         if (resInsert === -1 || resInsert === null) {
@@ -1211,7 +1211,6 @@ trackRouter.get("/get", async (req, res) => {
 
 trackRouter.post("/stop", async (req, res) => {
   try {
-    
   } catch (error: any) {
     console.log(
       chalk.red(`Error: ${error?.message}, for user id ${req.body?.userId}`)
