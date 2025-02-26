@@ -2,5 +2,6 @@ node_modules
 build
 .env*.local
 tmp
-python
+python/deps
+python/__pycache__
 public/images
