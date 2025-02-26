@@ -2,25 +2,44 @@
 import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Camera, Eye, RefreshCw, Play, Square } from 'lucide-react';
+import { Camera, Eye, RefreshCw, Play, Square, ChevronDown, ChevronUp } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { toast } from 'sonner';
+import API_LINK from '@/app/backendLink/link';
 
 const CameraDashboard = () => {
   const [cameraData, setCameraData] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [expandedRooms, setExpandedRooms] = useState({});
   const router = useRouter();
 
-  // Fetch camera data function with real API call
   const fetchCameras = async () => {
     setLoading(true);
     try {
-      const response = await fetch('/api/cameras'); 
+      const response = await fetch(`${API_LINK}/user/v1/track/get`, {
+        credentials: "include",
+        headers: {
+          "Content-Type": "application/json",
+          "ngrok-skip-browser-warning": "true",
+        },
+      }); 
       const responseData = await response.json();
 
       if (responseData.status === "success") {
         setCameraData(responseData.data);
+        
+        // Initialize expanded state for all rooms
+        if (responseData.data.cameras && responseData.data.cameras.length > 0) {
+          const rooms = {};
+          responseData.data.cameras.forEach(camera => {
+            if (camera.roomName) {
+              rooms[camera.roomName] = true; // Default to expanded
+            }
+          });
+          setExpandedRooms(rooms);
+        }
+        
         setLoading(false);
       } else {
         setError("Failed to fetch camera data");
@@ -36,12 +55,16 @@ const CameraDashboard = () => {
     fetchCameras();
   }, []);
 
-  // Start tracking function
   const startTracking = async () => {
     setLoading(true);
     try {
-      const response = await fetch('http://localhost:9000/user/v1/track/start', {
+      const response = await fetch(`${API_LINK}/user/v1/track/start`, {
         method: 'POST',
+        headers: {
+          "Content-Type": "application/json",
+          "ngrok-skip-browser-warning": "true",
+        },
+        credentials: "include"
       });
       
       if (response.ok) {
@@ -67,12 +90,16 @@ const CameraDashboard = () => {
     }
   };
 
-  // Stop tracking function
   const stopTracking = async () => {
     setLoading(true);
     try {
-      const response = await fetch('http://localhost:9000/user/v1/track/stop', {
+      const response = await fetch(`${API_LINK}/user/v1/track/stop`, {
         method: 'POST',
+        headers: {
+          "Content-Type": "application/json",
+          "ngrok-skip-browser-warning": "true",
+        },
+        credentials: "include"
       });
       
       if (response.ok) {
@@ -80,7 +107,6 @@ const CameraDashboard = () => {
           description: "Camera tracking has been stopped successfully."
         });
         
-        // Reload the page after stopping tracking
         window.location.reload();
       } else {
         setError("Failed to stop tracking");
@@ -98,12 +124,34 @@ const CameraDashboard = () => {
     }
   };
 
-  // Handle camera card click to redirect
   const handleCameraClick = (cameraId) => {
     router.push(`/camera/${cameraId}`);
   };
 
+  const toggleRoomExpand = (roomName, e) => {
+    e.stopPropagation(); // Prevent triggering camera click
+    setExpandedRooms(prev => ({
+      ...prev,
+      [roomName]: !prev[roomName]
+    }));
+  };
+
+  // Group cameras by room
+  const groupCamerasByRoom = () => {
+    if (!cameraData?.cameras || cameraData.cameras.length === 0) return {};
+    
+    return cameraData.cameras.reduce((acc, camera) => {
+      const roomName = camera.roomName || "Unassigned";
+      if (!acc[roomName]) {
+        acc[roomName] = [];
+      }
+      acc[roomName].push(camera);
+      return acc;
+    }, {});
+  };
+
   const hasCameras = cameraData?.cameras && cameraData.cameras.length > 0;
+  const camerasByRoom = groupCamerasByRoom();
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-900 to-slate-800 p-6 w-[1150px]">
@@ -155,76 +203,85 @@ const CameraDashboard = () => {
             </Button>
           </div>
         ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {cameraData.cameras.map((camera) => (
-              <Card 
-                key={camera.cameraId}
-                className="overflow-hidden bg-slate-800 border-slate-700 hover:border-blue-500 transition-all duration-300 cursor-pointer group"
-                onClick={() => handleCameraClick(camera.cameraId)}
-              >
-                <CardHeader className="bg-slate-700 p-4 pb-2">
-                  <CardTitle className="text-lg text-white flex items-center gap-2">
+          <div className="space-y-6">
+            {Object.entries(camerasByRoom).map(([roomName, cameras]) => (
+              <div key={roomName} className="bg-slate-800 border border-slate-700 rounded-lg overflow-hidden">
+                <div 
+                  className="bg-slate-700 p-4 flex justify-between items-center cursor-pointer"
+                  onClick={(e) => toggleRoomExpand(roomName, e)}
+                >
+                  <h2 className="text-xl font-medium text-white flex items-center gap-2">
                     <Camera className="h-5 w-5 text-blue-400" />
-                    {camera.cameraName}
-                  </CardTitle>
-                </CardHeader>
-                <CardContent className="p-0 relative">
-                  <div className="aspect-video bg-slate-900 flex items-center justify-center">
-                    <img 
-                      src={`http://127.0.0.1:${camera.port}/video_feed`}
-                      alt="Camera Feed"
-                      onError={(e) => {
-                        e.target.onerror = null;
-                        e.target.src = "/api/placeholder/640/360";
-                      }}
-                      className="w-full h-full object-cover opacity-80 group-hover:opacity-100 transition-opacity"
-                    />
-                    <div className="absolute inset-0 flex items-center justify-center bg-black bg-opacity-40 group-hover:bg-opacity-10 transition-all">
-                      <div className="bg-blue-500 rounded-full p-3 shadow-lg transform group-hover:scale-110 transition-transform">
-                        <Eye className="h-6 w-6 text-white" />
-                      </div>
-                    </div>
-                  </div>
-                </CardContent>
-                <CardFooter className="p-4 flex-col bg-slate-800 gap-2">
-                  <div className="flex justify-between items-center w-full">
-                    <div className="text-sm text-slate-300">
-                      Room: {camera.roomName || "Unassigned"}
-                    </div>
-                    <Button 
-                      variant="ghost" 
-                      size="sm" 
-                      className="text-blue-400 hover:text-blue-300 hover:bg-blue-900 hover:bg-opacity-20"
-                    >
-                      View
-                    </Button>
-                  </div>
-                  
-                  {camera.emps && camera.emps.length > 0 && (
-                    <div className="w-full mt-2 pt-2 border-t border-slate-700">
-                      <p className="text-xs text-slate-400 mb-2">Employees Detected:</p>
-                      <div className="flex flex-wrap gap-2">
-                        {camera.emps.map((emp) => (
-                          <div key={emp.id} className="flex items-center gap-2 bg-slate-700 p-1 px-2 rounded-full">
-                            <div className="w-6 h-6 rounded-full overflow-hidden bg-slate-600">
+                    {roomName} ({cameras.length})
+                  </h2>
+                  <Button 
+                    variant="ghost" 
+                    size="sm"
+                    className="text-slate-300 hover:text-white hover:bg-slate-600"
+                    onClick={(e) => toggleRoomExpand(roomName, e)}
+                  >
+                    {expandedRooms[roomName] ? 
+                      <ChevronUp className="h-5 w-5" /> : 
+                      <ChevronDown className="h-5 w-5" />
+                    }
+                  </Button>
+                </div>
+                
+                {expandedRooms[roomName] && (
+                  <div className="p-4">
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                      {cameras.map((camera) => (
+                        <Card 
+                          key={camera.cameraId}
+                          className="overflow-hidden bg-slate-800 border-slate-700 hover:border-blue-500 transition-all duration-300 cursor-pointer group"
+                          onClick={() => handleCameraClick(camera.cameraId)}
+                        >
+                          <CardHeader className="bg-slate-700 p-4 pb-2">
+                            <CardTitle className="text-lg text-white flex items-center gap-2">
+                              <Camera className="h-5 w-5 text-blue-400" />
+                              {camera.cameraName}
+                            </CardTitle>
+                          </CardHeader>
+                          <CardContent className="p-0 relative">
+                            <div className="aspect-video bg-slate-900 flex items-center justify-center">
                               <img 
-                                src={emp.imgURL} 
-                                alt={emp.firstName} 
+                                src={`${API_LINK}:${camera.port}/video_feed`}
+                                alt="Camera Feed"
                                 onError={(e) => {
                                   e.target.onerror = null;
-                                  e.target.src = "/api/placeholder/40/40";
+                                  e.target.src = "/static-placeholder.svg";
                                 }}
-                                className="w-full h-full object-cover"
+                                className="w-full h-full object-cover opacity-80 group-hover:opacity-100 transition-opacity"
                               />
+                              <div className="absolute inset-0 flex items-center justify-center bg-black bg-opacity-40 group-hover:bg-opacity-10 transition-all">
+                                <div className="bg-blue-500 rounded-full p-3 shadow-lg transform group-hover:scale-110 transition-transform">
+                                  <Eye className="h-6 w-6 text-white" />
+                                </div>
+                              </div>
                             </div>
-                            <span className="text-xs text-white">{emp.firstName} {emp.lastName}</span>
-                          </div>
-                        ))}
-                      </div>
+                          </CardContent>
+                          <CardFooter className="p-4 flex-col bg-slate-800 gap-2">
+                            <div className="flex justify-between items-center w-full">
+                              <div className="text-sm text-slate-300">
+                                IP: {camera.ip.split('//')[1]}
+                              </div>
+                              <Button 
+                                variant="ghost" 
+                                size="sm" 
+                                className="text-blue-400 hover:text-blue-300 hover:bg-blue-900 hover:bg-opacity-20"
+                              >
+                                View
+                              </Button>
+                            </div>
+                            
+                            
+                          </CardFooter>
+                        </Card>
+                      ))}
                     </div>
-                  )}
-                </CardFooter>
-              </Card>
+                  </div>
+                )}
+              </div>
             ))}
           </div>
         )}
