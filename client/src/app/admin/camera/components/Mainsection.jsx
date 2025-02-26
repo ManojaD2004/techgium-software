@@ -243,8 +243,9 @@ const CameraDashboard = () => {
                             </CardTitle>
                           </CardHeader>
                           <CardContent className="p-0 relative">
-                            <div className="aspect-video bg-slate-900 flex items-center justify-center">
-                              <img 
+                            <div className="aspect-auto bg-slate-900 flex items-center justify-center">
+                                <a href={`http://localhost:${camera.port}/video_feed`} target='_blank'>
+                                <img 
                                 src={`http://localhost:${camera.port}/video_feed`}
                                 alt="Camera Feed"
                                 onError={(e) => {
@@ -253,11 +254,9 @@ const CameraDashboard = () => {
                                 }}
                                 className="w-full h-full object-cover opacity-80 group-hover:opacity-100 transition-opacity"
                               />
-                              <div className="absolute inset-0 flex items-center justify-center bg-black bg-opacity-40 group-hover:bg-opacity-10 transition-all">
-                                <div className="bg-blue-500 rounded-full p-3 shadow-lg transform group-hover:scale-110 transition-transform">
-                                  <Eye className="h-6 w-6 text-white" />
-                                </div>
-                              </div>
+                                </a>
+                             
+                             
                             </div>
                           </CardContent>
                           <CardFooter className="p-4 flex-col bg-slate-800 gap-2">
