@@ -4,7 +4,6 @@ import helmet from "helmet";
 import { userRouter } from "./user/route";
 import cookieParser from "cookie-parser";
 import { authMiddleWare } from "./middlewares/auth";
-import { devRouter } from "./dev/route";
 import { hitMiddleWare } from "./middlewares/hit";
 import { envConfigs, serverConfigs } from "./configs/configs";
 import morgan from "morgan";
@@ -12,7 +11,6 @@ import chalk from "chalk";
 import { MemCache } from "./cache/redis";
 import { DB } from "./db/db";
 import compression from "compression";
-import { trackRouter } from "./track/route";
 import { fileRouter } from "./file/route";
 
 const { COOKIE_SECRET } = envConfigs;
@@ -37,11 +35,11 @@ app.use(
 );
 app.use(hitMiddleWare);
 app.use(morgan("dev"));
+app.use(express.json());
 
 // app.use(authMiddleWare);
 
 // Routes
-userRouter.use(express.json());
 userRouter.use(compression());
 userRouter.use(helmet());
 app.use("/user", userRouter);

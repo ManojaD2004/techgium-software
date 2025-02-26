@@ -16,6 +16,7 @@ import path from "path";
 const userRouter = express.Router();
 const v1Routes = express.Router();
 const adminRoutes = express.Router();
+const trackRouter = express.Router();
 
 // Macros
 const { SESSION_EXPIRE_TIME_IN_DAYS } = serverConfigs;
@@ -679,7 +680,7 @@ adminRoutes.get("/get/cameras", async (req, res) => {
       return;
     }
     const trackerDb = new TrackerDBv1();
-    const resCameras = await trackerDb.getCameras();
+    const resCameras = await trackerDb.getNullCameras();
     if (resCameras === null) {
       res.status(400).send({
         status: "fail",
@@ -996,7 +997,53 @@ v1Routes.get("/onboarding", async (req, res) => {
   }
 });
 
+trackRouter.get("/live/:port", async (req, res) => {
+  try {
+    const response = await fetch(
+      `http://localhost:${req.params.port}/video_feed`
+    );
+    const reader = response.body?.getReader();
+    if (!reader) {
+      res.status(500).send("Error: Response body is not readable");
+      return;
+    }
+    res.setHeader(
+      "Content-Type",
+      response.headers.get("Content-Type") || "video/mjpeg"
+    );
+    while (true) {
+      const { done, value } = await reader.read();
+      if (done) {
+        res.end();
+        return;
+      }
+      res.write(value);
+    }
+  } catch (error: any) {
+    console.log(error);
+    res.status(500).send("Failed to fetch video stream");
+  }
+});
+
+trackRouter.post("/start", async (req, res) => {
+  try {
+    
+  } catch (error: any) {
+    console.log(
+      chalk.red(`Error: ${error?.message}, for user id ${req.body?.userId}`)
+    );
+    res.status(400).send({
+      status: "fail",
+      error: error,
+      data: {
+        message: "Internal Server Error!",
+      },
+    });
+  }
+});
+
 v1Routes.use("/admin", adminRoutes);
+v1Routes.use("/track", trackRouter);
 userRouter.use("/v1", v1Routes);
 
 export { userRouter };

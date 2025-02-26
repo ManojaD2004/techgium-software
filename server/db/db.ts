@@ -577,8 +577,8 @@ class TrackerDBv1 extends DB {
       }
     });
   }
-  async getCameras() {
-    return await this.retryQuery("getAssignedCameras", async () => {
+  async getNullCameras() {
+    return await this.retryQuery("getNullCameras", async () => {
       let pClient;
       try {
         pClient = await this.connect();
@@ -592,7 +592,8 @@ class TrackerDBv1 extends DB {
             "camera_name" as "cameraName",
             "room_id" as "roomId"
           FROM 
-            "cameras"`
+            "cameras"
+          WHERE "room_id" IS NULL;`
         );
         const cameraData: Camera[] = res.rows;
         return cameraData;
