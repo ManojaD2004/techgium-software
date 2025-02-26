@@ -1,27 +1,12 @@
 services:
-  # server:
-  #   build:
-  #     context: ./
-  #     dockerfile: dockerfile
-  #   ports:
-  #     - "9000:9000"
-  #   depends_on:
-  #     - db
-  # pgadmin:
-  #   image: dpage/pgadmin4
-  #   ports:
-  #     - "8002:80"
-  #   environment:
-  #     PGADMIN_DEFAULT_EMAIL: blueline@gmail.com
-  # #     PGADMIN_DEFAULT_PASSWORD: 12345
   db:
     build:
       context: ./
       dockerfile: dockerfile.pg
     ports:
       - "5432:5432"
-    volumes:
-      - db-data:/var/lib/postgresql/data
+    # volumes:
+    #   - db-data:/var/lib/postgresql/data
   cache:
     build:
       context: ./
@@ -32,6 +17,6 @@ services:
     # volumes:
     #   - cache-data:/data
 
-volumes:
-  db-data:
-  cache-data:
+# volumes:
+#   db-data:
+#   cache-data:

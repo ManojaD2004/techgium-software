@@ -42,7 +42,6 @@ async function main() {
 
     app.listen(PORT, async () => {
       console.log(chalk.greenBright(`Server listening to Port: ${PORT}`));
-      // updateMeetingRecordingLinkJob();
     });
     process.on("SIGINT", async () => {
       console.log(chalk.red("Shutting down Process..."));

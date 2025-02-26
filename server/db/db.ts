@@ -162,11 +162,7 @@ class UserDBv1 extends DB {
     });
   }
   // Employee User
-  async createEmployeeUser(
-    profileData: EmployeeProfile,
-    clerkId: string,
-    imgURL: string
-  ) {
+  async createEmployeeUser(profileData: EmployeeProfile, imgURL: string) {
     return await this.retryQuery("createEmployeeUser", async () => {
       let pClient;
       try {
@@ -181,14 +177,13 @@ class UserDBv1 extends DB {
         await pClient.query("BEGIN");
         const res = await pClient.query(
           `
-          INSERT INTO "users" ("user_name", "clerk_id", "first_name",
+          INSERT INTO "users" ("user_name", "first_name",
           "last_name", "img_URL", "type", "phone_no") 
-          VALUES ($1::varchar, $2::varchar,
-          $3::varchar, $4::varchar, $5::varchar, $6::user_type,
-          $7::varchar) RETURNING id;`,
+          VALUES ($1::varchar,
+          $2::varchar, $3::varchar, $4::varchar, $5::user_type,
+          $6::varchar) RETURNING id;`,
           [
             userName,
-            clerkId,
             profileData.firstName,
             profileData.lastName,
             imgURL,
@@ -432,18 +427,22 @@ class TrackerDBv1 extends DB {
             r."max_head_count" as "maxHeadCount",
             a."user_name" as "userName", 
             a."first_name" as "firstName",
-            a."last_name" as "lastName,
+            a."last_name" as "lastName",
             a."img_URL" as "imgURL",
             a."phone_no" as "phoneNo",
-            mr."model_id" as "modelId,
+            mr."model_id" as "modelId",
             m."model_name" as "modelName"
-          FROM "rooms" as r
-          INNER JOIN "users" a ON
+          FROM 
+            "rooms" as r
+          INNER JOIN 
+            "users" as a ON
           r."created_by" = a."id" AND
           a."type" = 'admin'
-          LEFT JOIN "model_room" as mr
+          LEFT JOIN 
+            "model_room" as mr ON
           r."id" = mr."room_id"
-          LEFT JOIN "model" as m
+          LEFT JOIN 
+            "model" as m ON
           mr."model_id" = m."id"`
         );
         const roomData: Room[] = res.rows;
@@ -662,7 +661,7 @@ class TrackerDBv1 extends DB {
 
 class ModelDBv1 extends DB {
   // Model and Employee Data operations
-  async createModel(modelName: string, userId: number) {
+  async createModel(modelName: string, modelDesc: string) {
     return await this.retryQuery("createModel", async () => {
       let pClient;
       try {
@@ -670,9 +669,9 @@ class ModelDBv1 extends DB {
         await pClient.query("BEGIN");
         const res = await pClient.query(
           `
-         INSERT INTO "model" ("model_name", "created_by") 
-         VALUES ($1::varchar, $2::int) RETURNING id;`,
-          [modelName, userId]
+         INSERT INTO "model" ("model_name", "model_desc") 
+         VALUES ($1::varchar, $2::text) RETURNING id;`,
+          [modelName, modelDesc]
         );
         if (res.rowCount !== 1) {
           await pClient.query("ROLLBACK");
@@ -700,7 +699,7 @@ class ModelDBv1 extends DB {
       }
     });
   }
-  async updateModel(modelName: string, modelId: number) {
+  async updateModel(modelName: string, modelDesc: string, modelId: number) {
     return await this.retryQuery("updateModel", async () => {
       let pClient;
       try {
@@ -708,11 +707,12 @@ class ModelDBv1 extends DB {
         await pClient.query("BEGIN");
         const res = await pClient.query(
           `
-         UPDATE ""model" as m
+         UPDATE "model" as m
           SET
-            m."model_name" = $1::varchar
-         WHERE m."id" = $2::int RETURNING id;`,
-          [modelName, modelId]
+            m."model_name" = $1::varchar,
+            m."model_desc" = $2::text
+         WHERE m."id" = $3::int RETURNING id;`,
+          [modelName, modelDesc, modelId]
         );
         if (res.rowCount !== 1) {
           await pClient.query("ROLLBACK");
@@ -751,15 +751,8 @@ class ModelDBv1 extends DB {
           m."id" as "modelId",
           m."model_name" as "modelName",
           m."created_at" as "createdAt",
-          a."user_name" as "userName", 
-          a."first_name" as "firstName",
-          a."last_name" as "lastName,
-          a."img_URL" as "imgURL",
-          a."phone_no" as "phoneNo"
-         FROM "model" as m
-         INNER JOIN "users" a ON
-          r."created_by" = a."id" AND
-          a."type" = 'admin'`
+          m."model_desc" as "modelDesc"
+         FROM "model" as m`
         );
         const modelData: Model[] = res.rows;
         return modelData;
@@ -815,130 +808,8 @@ class ModelDBv1 extends DB {
       }
     });
   }
-  async assignModelRoom(modelId: number, roomId: number) {
-    return await this.retryQuery("assignModelRoom", async () => {
-      let pClient;
-      try {
-        pClient = await this.connect();
-        await pClient.query("BEGIN");
-        const res = await pClient.query(
-          `
-         INSERT INTO "model_room" ("model_id", "room_id") 
-         VALUES ($1::int, $2::int) RETURNING id;`,
-          [modelId, roomId]
-        );
-        if (res.rowCount !== 1) {
-          await pClient.query("ROLLBACK");
-          return -1;
-        }
-        const modelData = {
-          modelRoomId: res.rows[0].id as number,
-        };
-        await pClient.query("COMMIT");
-        return modelData;
-      } catch (error: any) {
-        console.log(
-          chalk.red("PostgresSQL Error: "),
-          error?.message,
-          error?.code
-        );
-        if (pClient) {
-          await pClient.query("ROLLBACK");
-        }
-        return null;
-      } finally {
-        if (pClient) {
-          this.release(pClient);
-        }
-      }
-    });
-  }
-  async assignModelEmployee(modelId: number, employeeId: number) {
-    return await this.retryQuery("assignModelEmployee", async () => {
-      let pClient;
-      try {
-        pClient = await this.connect();
-        await pClient.query("BEGIN");
-        const res = await pClient.query(
-          `
-         INSERT INTO "model_employee" ("model_id", "room_id") 
-         VALUES ($1::int, $2::int) RETURNING id;`,
-          [modelId, employeeId]
-        );
-        if (res.rowCount !== 1) {
-          await pClient.query("ROLLBACK");
-          return -1;
-        }
-        const modelData = {
-          modelEmployeeId: res.rows[0].id as number,
-        };
-        await pClient.query("COMMIT");
-        return modelData;
-      } catch (error: any) {
-        console.log(
-          chalk.red("PostgresSQL Error: "),
-          error?.message,
-          error?.code
-        );
-        if (pClient) {
-          await pClient.query("ROLLBACK");
-        }
-        return null;
-      } finally {
-        if (pClient) {
-          this.release(pClient);
-        }
-      }
-    });
-  }
-  async getAssignModelEmployee(modelId: number) {
-    return await this.retryQuery("getAssignModelEmployee", async () => {
-      let pClient;
-      try {
-        pClient = await this.connect();
-        const res = await pClient.query(
-          `
-         SELECT 
-          me."employee_id" as "employeeId",
-          COUNT(mei."img_path") as "totalImgUploaded",
-          me."id",
-          e."user_name" as "userName",
-          e."first_name" as "firstName",
-          e."last_name" as "lastName",
-          e."img_URL" as "imgURL",
-          e."phone_no" as "phoneNumber"
-         FROM "model_employee" as me
-         INNER JOIN 
-          "users" as e
-         ON e."id" = me."employee_id"
-         INNER JOIN 
-          "employee_img" as mei
-         ON mei."employee_id" = me."id"
-         WHERE me."model_id" = $1::int
-         GROUP BY 
-          me."employee_id"
-         ORDER BY 
-          me."employee_id";`,
-          [modelId]
-        );
-        const modelData: GetModelEmployee[] = res.rows;
-        return modelData;
-      } catch (error: any) {
-        console.log(
-          chalk.red("PostgresSQL Error: "),
-          error?.message,
-          error?.code
-        );
-        return null;
-      } finally {
-        if (pClient) {
-          this.release(pClient);
-        }
-      }
-    });
-  }
-  async addModelEmployeeImgPath(employeeId: number, imgPath: string) {
-    return await this.retryQuery("addModelEmployeeImgPath", async () => {
+  async addEmployeeImgPath(employeeId: number, imgPath: string) {
+    return await this.retryQuery("addEmployeeImgPath", async () => {
       let pClient;
       try {
         pClient = await this.connect();
@@ -976,8 +847,8 @@ class ModelDBv1 extends DB {
       }
     });
   }
-  async getAssignModelEmployeeImg(empId: number) {
-    return await this.retryQuery("getAssignModelEmployeeImg", async () => {
+  async getEmployeeImgPath(empId: number) {
+    return await this.retryQuery("getEmployeeImgPath", async () => {
       let pClient;
       try {
         pClient = await this.connect();
@@ -1010,22 +881,33 @@ class ModelDBv1 extends DB {
       }
     });
   }
-  async addEmployeeData(
-    employeeId: number,
-    roomId: number,
-    totalHoursSpent: number
-  ) {
+  async addEmployeeData(employeeId: number, roomId: number, date: string) {
     return await this.retryQuery("addEmployeeData", async () => {
       let pClient;
       try {
         pClient = await this.connect();
         await pClient.query("BEGIN");
+        const resCheck = await pClient.query(
+          `
+          SELECT "id" FROM "employee_data"
+          WHERE 
+            "room_id" = $1::int AND
+            "date" = $2::date
+          `,
+          [roomId, date]
+        );
+        if (resCheck.rowCount !== 0) {
+          await pClient.query("ROLLBACK");
+          return {
+            employeeData: resCheck.rows,
+          };
+        }
         const res = await pClient.query(
           `
          INSERT INTO "employee_data ("employee_id", 
-         "room_id", "total_hours_spent") 
-         VALUES ($1::int, $2::int, $3::numeric) RETURNING id;`,
-          [employeeId, roomId, totalHoursSpent]
+         "room_id", "date") 
+         VALUES ($1::int, $2::int, $3::date) RETURNING id;`,
+          [employeeId, roomId, date]
         );
         if (res.rowCount !== 1) {
           await pClient.query("ROLLBACK");
@@ -1045,6 +927,78 @@ class ModelDBv1 extends DB {
         if (pClient) {
           await pClient.query("ROLLBACK");
         }
+        return null;
+      } finally {
+        if (pClient) {
+          this.release(pClient);
+        }
+      }
+    });
+  }
+  async updateEmployeeData(employeeDataId: number, totalHoursSpent: number) {
+    return await this.retryQuery("updateEmployeeData", async () => {
+      let pClient;
+      try {
+        pClient = await this.connect();
+        await pClient.query("BEGIN");
+        const res = await pClient.query(
+          `
+         UPDATE "employee_data 
+         SET "total_hours_spent" = $2::numeric
+         WHERE 
+          "id" = $1::int
+         RETURNING id;`,
+          [employeeDataId, totalHoursSpent]
+        );
+        if (res.rowCount !== 1) {
+          await pClient.query("ROLLBACK");
+          return -1;
+        }
+        const modelData = {
+          employeeDataId: res.rows[0].id as number,
+        };
+        await pClient.query("COMMIT");
+        return modelData;
+      } catch (error: any) {
+        console.log(
+          chalk.red("PostgresSQL Error: "),
+          error?.message,
+          error?.code
+        );
+        if (pClient) {
+          await pClient.query("ROLLBACK");
+        }
+        return null;
+      } finally {
+        if (pClient) {
+          this.release(pClient);
+        }
+      }
+    });
+  }
+  async getRoomIdByDate(date: string) {
+    return await this.retryQuery("getRoomIdByDate", async () => {
+      let pClient;
+      try {
+        pClient = await this.connect();
+        const res = await pClient.query(
+          `
+         SELECT 
+          "room_id" as "roomId", "id"
+         FROM "employee_data"
+         WHERE 
+          "date" = $1::date;`,
+          [date]
+        );
+        type RoomId = { id: number; roomId: number };
+        const modelData: RoomId[] = res.rows;
+        return modelData;
+      } catch (error: any) {
+        console.log(
+          chalk.red("PostgresSQL Error: "),
+          error?.message,
+          error?.code
+        );
         return null;
       } finally {
         if (pClient) {
@@ -1094,7 +1048,7 @@ class SessionDB extends DB {
         const res = await pClient.query(
           `
            SELECT "session_id" FROM "sessions" WHERE
-           "clerk_id" = $1::varchar;`,
+           "user_id" = $1::varchar;`,
           [authId]
         );
         if (res.rowCount !== 1) {
@@ -1123,7 +1077,7 @@ class SessionDB extends DB {
         pClient = await this.connect();
         const res = await pClient.query(
           `
-            INSERT INTO "sessions" ("clerk_id","session_id") 
+            INSERT INTO "sessions" ("user_id","session_id") 
             VALUES ($1::varchar, $2::uuid) RETURNING "session_id";`,
           [authId, sessionId]
         );

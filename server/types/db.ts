@@ -1,3 +1,5 @@
+import { GetModelEmployee } from "./user";
+
 type Ping = {
   pong: string;
 };
@@ -17,19 +19,20 @@ type Room = AdminUser & {
   maxHeadCount?: number;
   modelId: number | null;
   modelName: string | null;
+  cameras: Camera[]
 };
 
 type Camera = {
-  roomId: number | null;
-  roomName: string | null;
   cameraId: number;
   cameraName: string;
+  videoLink: string;
 };
 
 type Model = AdminUser & {
   modelId: number;
   modelName: string;
   createdAt: string;
+  modelDesc: string;
 };
 
 type ModelEmployeeImg = {

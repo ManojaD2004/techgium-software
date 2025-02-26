@@ -85,7 +85,7 @@ app.get("/verify", (req, res) => {
   }
 });
 
-app.get("/", async (_, res) => {
+app.get("/", async (req, res) => {
   try {
     const db = new DB();
     const memCache = new MemCache();
@@ -99,6 +99,7 @@ app.get("/", async (_, res) => {
         cacheRes,
         message: "Express JS Server is Running!",
         extra: `Serving form process ${process.pid}`,
+        cookies: req.signedCookies
       },
     });
   } catch (error) {
