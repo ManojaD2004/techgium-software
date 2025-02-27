@@ -6,6 +6,7 @@ import { Camera, Eye, RefreshCw, Play, Square, ChevronDown, ChevronUp } from 'lu
 import { useRouter } from 'next/navigation';
 import { toast } from 'sonner';
 import API_LINK from '@/app/backendLink/link';
+import Notification from './Notification';
 
 const CameraDashboard = () => {
   const [cameraData, setCameraData] = useState(null);
@@ -202,6 +203,9 @@ const CameraDashboard = () => {
           </div>
         ) : (
           <div className="space-y-6">
+            <div>
+              <Notification/>
+            </div>
             {Object.entries(camerasByRoom).map(([roomName, cameras]) => (
               <div key={roomName} className="bg-slate-800 border border-slate-700 rounded-lg overflow-hidden">
                 <div 
