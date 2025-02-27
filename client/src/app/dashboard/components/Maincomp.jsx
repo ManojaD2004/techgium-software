@@ -11,12 +11,10 @@ import {
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
-import { Avatar, AvatarFallback} from "@/components/ui/avatar";
+import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import {
   LineChart,
   Line,
-  BarChart,
-  Bar,
   PieChart,
   Pie,
   RadarChart,
@@ -37,12 +35,8 @@ import {
   Clock,
   Award,
   TrendingUp,
-  Users,
   Target,
-  BookOpen,
-  Coffee,
   Zap,
-  BellRing,
   Calendar as CalendarIcon,
   Phone,
 } from "lucide-react";
@@ -57,14 +51,6 @@ const hoursWorkedData = [
   { day: "Sun", "This Week": 25, "Last Week": 20 },
 ];
 
-const productivityData = [
-  { name: "Alex J.", productivity: 94, hours: 47 },
-  { name: "Sarah M.", productivity: 88, hours: 42 },
-  { name: "Michael C.", productivity: 92, hours: 45 },
-  { name: "Emma W.", productivity: 82, hours: 38 },
-  { name: "David K.", productivity: 90, hours: 44 },
-];
-
 const departmentHoursData = [
   { name: "Room1", hours: 92 },
   { name: "Room2", hours: 42 },
@@ -77,7 +63,7 @@ const topPerformers = [
   { id: 5, name: "David Kim", productivity: 90, increase: "+5%" },
 ];
 
-// Skill matrix data for radar chart
+
 const skillMatrixData = [
   { subject: "Coding", A: 120, B: 110, fullMark: 150 },
   { subject: "Communication", A: 98, B: 130, fullMark: 150 },
@@ -88,13 +74,23 @@ const skillMatrixData = [
 ];
 
 const employeeInfo = {
-  name: "Ava Adam",
+  firstName: "Ava",
+  lastName:"Adam",
   role: "Senior Software Engineer",
   status: "Active",
   room: "CS Lab",
   phone: "9902798895",
-  avatar: "https://images.unsplash.com/photo-1438761681033-6461ffad8d80?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=1470&q=80"
+  imgURL:
+    "https://images.unsplash.com/photo-1438761681033-6461ffad8d80?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=1470&q=80",
 };
+
+const basicInfo={
+  totalHours:"123",
+  totalHoursPerc:"12%",
+  averageProductivy:"89%",
+  averageProductivyPerc:"-5%"
+
+}
 
 // Project contribution data
 
@@ -158,39 +154,46 @@ export default function EmployeeDashboard() {
 
       {/* Employee Info Section */}
       <Card className="border-none shadow-lg mb-8 bg-gradient-to-r from-blue-50 to-purple-50 hover:shadow-xl transition-shadow">
-  <CardContent className="p-6">
-    <div className="flex items-center space-x-6">
-      {/* Avatar with online image */}
-      <Avatar className="h-20 w-20 border-2 border-white shadow-md">
-        <img 
-          src={employeeInfo.avatar} 
-          alt={`${employeeInfo.name}'s Avatar`}
-          className="object-cover"
-        />
-        <AvatarFallback className="bg-gradient-to-r from-blue-600 to-purple-600 text-white">
-          {employeeInfo.name.split(' ').map(n => n[0]).join('')}
-        </AvatarFallback>
-      </Avatar>
+        <CardContent className="p-6">
+          <div className="flex items-center space-x-6">
+            {/* Avatar with online image */}
+            <Avatar className="h-20 w-20 border-2 border-white shadow-md">
+              <img
+                src={employeeInfo.imgURL}
+                alt={`${employeeInfo.firstName}'s Avatar`}
+                className="object-cover"
+              />
+              <AvatarFallback className="bg-gradient-to-r from-blue-600 to-purple-600 text-white">
+                {employeeInfo.firstName
+                  .split(" ")
+                  .map((n) => n[0])
+                  .join("")}
+              </AvatarFallback>
+            </Avatar>
 
-      {/* Employee Details */}
-      <div className="space-y-1.5">
-        <h2 className="text-2xl font-bold text-gray-800">{employeeInfo.name}</h2>
-        <p className="text-gray-600 text-sm">{employeeInfo.role}</p>
-        <div className="flex items-center space-x-3">
-          <Badge variant="outline" className="bg-green-100 border-green-200 text-green-800">
-            <div className="h-2 w-2 rounded-full bg-green-500 mr-2"></div>
-            {employeeInfo.status} - {employeeInfo.room}
-          </Badge>
-          <div className="flex items-center space-x-2 text-gray-500">
-            <Phone className="h-4 w-4" />
-            <span className="text-sm">{employeeInfo.phone}</span>
+            {/* Employee Details */}
+            <div className="space-y-1.5">
+              <h2 className="text-2xl font-bold text-gray-800">
+                {employeeInfo.firstName} {employeeInfo.lastName}
+              </h2>
+              <p className="text-gray-600 text-sm">{employeeInfo.role}</p>
+              <div className="flex items-center space-x-3">
+                <Badge
+                  variant="outline"
+                  className="bg-green-100 border-green-200 text-green-800"
+                >
+                  <div className="h-2 w-2 rounded-full bg-green-500 mr-2"></div>
+                  {employeeInfo.status} - {employeeInfo.room}
+                </Badge>
+                <div className="flex items-center space-x-2 text-gray-500">
+                  <Phone className="h-4 w-4" />
+                  <span className="text-sm">{employeeInfo.phone}</span>
+                </div>
+              </div>
+            </div>
           </div>
-        </div>
-      </div>
-    </div>
-  </CardContent>
-</Card>
-
+        </CardContent>
+      </Card>
 
       {/* Overview Cards */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
@@ -199,10 +202,10 @@ export default function EmployeeDashboard() {
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm font-medium text-gray-500">Total Hours</p>
-                <h3 className="text-2xl font-bold mt-1">294 hrs</h3>
+                <h3 className="text-2xl font-bold mt-1">{basicInfo.totalHours} hrs</h3>
                 <p className="text-xs text-green-500 mt-1 flex items-center">
                   <ChevronsUpDown className="h-4 w-4 mr-1" />
-                  +12% from last {timeRange}
+                  {basicInfo.totalHoursPerc} from last {timeRange}
                 </p>
               </div>
               <div className="h-12 w-12 bg-blue-100 rounded-full flex items-center justify-center">
@@ -219,31 +222,14 @@ export default function EmployeeDashboard() {
                 <p className="text-sm font-medium text-gray-500">
                   Avg. Productivity
                 </p>
-                <h3 className="text-2xl font-bold mt-1">89.2%</h3>
+                <h3 className="text-2xl font-bold mt-1">{basicInfo.averageProductivy}</h3>
                 <p className="text-xs text-green-500 mt-1 flex items-center">
                   <ChevronsUpDown className="h-4 w-4 mr-1" />
-                  +5% from last {timeRange}
+                  {basicInfo.averageProductivyPerc} from last {timeRange}
                 </p>
               </div>
               <div className="h-12 w-12 bg-green-100 rounded-full flex items-center justify-center">
                 <TrendingUp className="h-6 w-6 text-green-600" />
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card className="border-none shadow-lg">
-          <CardContent className="pt-6">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm font-medium text-gray-500">
-                  Active Employees
-                </p>
-                <h3 className="text-2xl font-bold mt-1">5/5</h3>
-                <p className="text-xs text-gray-500 mt-1">100% attendance</p>
-              </div>
-              <div className="h-12 w-12 bg-purple-100 rounded-full flex items-center justify-center">
-                <Users className="h-6 w-6 text-purple-600" />
               </div>
             </div>
           </CardContent>
@@ -350,109 +336,6 @@ export default function EmployeeDashboard() {
               <Tooltip />
             </RadarChart>
           </ResponsiveContainer>
-        </CardContent>
-      </Card>
-
-      {/* Productivity Section */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
-        <Card className="lg:col-span-2 border-none shadow-lg">
-          <CardHeader>
-            <CardTitle>Employee Productivity vs Hours Worked</CardTitle>
-            <CardDescription>
-              Productivity score based on completed tasks per hour
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <ResponsiveContainer width="100%" height={300}>
-              <BarChart
-                data={productivityData}
-                margin={{ top: 20, right: 30, left: 20, bottom: 5 }}
-              >
-                <CartesianGrid strokeDasharray="3 3" />
-                <XAxis dataKey="name" />
-                <YAxis yAxisId="left" orientation="left" stroke="#0088FE" />
-                <YAxis yAxisId="right" orientation="right" stroke="#FF8042" />
-                <Tooltip />
-                <Legend />
-                <Bar
-                  yAxisId="left"
-                  dataKey="productivity"
-                  name="Productivity %"
-                  fill="#0088FE"
-                />
-                <Bar
-                  yAxisId="right"
-                  dataKey="hours"
-                  name="Hours Worked"
-                  fill="#FF8042"
-                />
-              </BarChart>
-            </ResponsiveContainer>
-          </CardContent>
-        </Card>
-      </div>
-
-      {/* New: Recent Activity Timeline */}
-      <Card className="border-none shadow-lg mb-8">
-        <CardHeader>
-          <CardTitle>Recent Activity Timeline</CardTitle>
-          <CardDescription>Employee activities from today</CardDescription>
-        </CardHeader>
-        <CardContent>
-          <div className="space-y-8">
-            {[
-              {
-                time: "9:30 AM",
-                user: "Alex Johnson",
-                action: "Started work on Project Alpha",
-                icon: <Clock className="h-5 w-5 text-blue-500" />,
-              },
-              {
-                time: "10:15 AM",
-                user: "Sarah Miller",
-                action: "Completed 3 design tasks",
-                icon: <BookOpen className="h-5 w-5 text-green-500" />,
-              },
-              {
-                time: "11:45 AM",
-                user: "Michael Chen",
-                action: "Fixed critical bug in backend API",
-                icon: <Zap className="h-5 w-5 text-yellow-500" />,
-              },
-              {
-                time: "12:30 PM",
-                user: "Team",
-                action: "Lunch break",
-                icon: <Coffee className="h-5 w-5 text-orange-500" />,
-              },
-              {
-                time: "2:00 PM",
-                user: "Emma Wilson",
-                action: "Started sprint planning meeting",
-                icon: <BellRing className="h-5 w-5 text-purple-500" />,
-              },
-            ].map((activity, index) => (
-              <div key={index} className="flex">
-                <div className="flex flex-col items-center mr-4">
-                  <div className="flex items-center justify-center h-10 w-10 rounded-full bg-blue-50">
-                    {activity.icon}
-                  </div>
-                  {index < 4 && (
-                    <div className="h-full w-0.5 bg-gray-200 mt-2"></div>
-                  )}
-                </div>
-                <div>
-                  <div className="flex items-center">
-                    <p className="font-medium">{activity.user}</p>
-                    <Badge variant="outline" className="ml-2">
-                      {activity.time}
-                    </Badge>
-                  </div>
-                  <p className="text-gray-600 mt-1">{activity.action}</p>
-                </div>
-              </div>
-            ))}
-          </div>
         </CardContent>
       </Card>
 
