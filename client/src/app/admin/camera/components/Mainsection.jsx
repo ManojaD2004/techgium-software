@@ -124,9 +124,7 @@ const CameraDashboard = () => {
     }
   };
 
-  const handleCameraClick = (cameraId) => {
-    router.push(`/camera/${cameraId}`);
-  };
+  
 
   const toggleRoomExpand = (roomName, e) => {
     e.stopPropagation(); // Prevent triggering camera click
@@ -162,7 +160,7 @@ const CameraDashboard = () => {
             {hasCameras && (
               <Button 
                 variant="destructive" 
-                className="flex items-center gap-2"
+                className="flex items-center gap-2 text-white"
                 onClick={stopTracking}
               >
                 <Square className="h-4 w-4" />
@@ -234,7 +232,7 @@ const CameraDashboard = () => {
                         <Card 
                           key={camera.cameraId}
                           className="overflow-hidden bg-slate-800 border-slate-700 hover:border-blue-500 transition-all duration-300 cursor-pointer group"
-                          onClick={() => handleCameraClick(camera.cameraId)}
+                          
                         >
                           <CardHeader className="bg-slate-700 p-4 pb-2">
                             <CardTitle className="text-lg text-white flex items-center gap-2">
