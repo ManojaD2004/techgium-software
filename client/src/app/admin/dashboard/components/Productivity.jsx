@@ -1,113 +1,667 @@
-"use client"
-import React, { useState } from 'react';
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
-import { Progress } from '@/components/ui/progress';
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { AreaChart, Area, LineChart, Line, BarChart, Bar, PieChart, Pie, RadarChart, Radar, PolarGrid, PolarAngleAxis, PolarRadiusAxis, Cell, ResponsiveContainer, XAxis, YAxis, CartesianGrid, Tooltip, Legend } from 'recharts';
-import { ChevronsUpDown, Clock, Award, TrendingUp, Users, Calendar, Target, BookOpen, Coffee, Zap, BellRing, Calendar as CalendarIcon } from 'lucide-react';
+"use client";
+import React, { useState, useMemo } from "react";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardFooter,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
+import { Progress } from "@/components/ui/progress";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import {
+  AreaChart,
+  Area,
+  LineChart,
+  Line,
+  BarChart,
+  Bar,
+  PieChart,
+  Pie,
+  RadarChart,
+  Radar,
+  PolarGrid,
+  PolarAngleAxis,
+  PolarRadiusAxis,
+  Cell,
+  ResponsiveContainer,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip,
+  Legend,
+} from "recharts";
+import {
+  ChevronsUpDown,
+  Clock,
+  Award,
+  TrendingUp,
+  Users,
+  Calendar,
+  Target,
+  BookOpen,
+  Coffee,
+  Zap,
+  BellRing,
+  Calendar as CalendarIcon,
+} from "lucide-react";
 
-// Sample data
+const apiResponse ={
+    "status": "success",
+    "data": {
+        "employeeData": [
+            {
+                "id": 1,
+                "roomId": 1,
+                "empId": 7,
+                "name": "Manoja D",
+                "phoneNo": "9902798895",
+                "avatar": "/file/v1/image/242ad1.jpg",
+                "status": "Active",
+                "room": "CS Lab",
+                "hoursThisWeek": 25.57,
+                "productivity": 45.66,
+                "trend": -5.54
+            },
+            {
+                "id": 4,
+                "roomId": 1,
+                "empId": 9,
+                "name": "Vilas CP",
+                "phoneNo": "9845263712",
+                "avatar": "/file/v1/image/2a80df.jpeg",
+                "status": "Active",
+                "room": "CS Lab",
+                "hoursThisWeek": 20.55,
+                "productivity": 36.7,
+                "trend": -5.91
+            },
+            {
+                "id": 5,
+                "roomId": 1,
+                "empId": 11,
+                "name": "Tejas Krishna",
+                "phoneNo": "8105516094",
+                "avatar": "/file/v1/image/2cb1d8.jpeg",
+                "status": "Active",
+                "room": "CS Lab",
+                "hoursThisWeek": 21,
+                "productivity": 37.5,
+                "trend": 1.84
+            },
+            {
+                "id": 7,
+                "roomId": 1,
+                "empId": 12,
+                "name": "Aryan Choudhary",
+                "phoneNo": "8107288787",
+                "avatar": "/file/v1/image/94698a.jpg",
+                "status": "Active",
+                "room": "CS Lab",
+                "hoursThisWeek": 18.13,
+                "productivity": 32.38,
+                "trend": -23.11
+            },
+            {
+                "id": 8,
+                "roomId": 1,
+                "empId": 13,
+                "name": "Aditya Srinivasan",
+                "phoneNo": "9880284141",
+                "avatar": "/file/v1/image/32e470.jpg",
+                "status": "Active",
+                "room": "CS Lab",
+                "hoursThisWeek": 19.76,
+                "productivity": 35.29,
+                "trend": 6.07
+            },
+            {
+                "id": 9,
+                "roomId": 1,
+                "empId": 14,
+                "name": "Rahul S",
+                "phoneNo": "9980941652",
+                "avatar": "/file/v1/image/f16f3f.jpg",
+                "status": "Active",
+                "room": "CS Lab",
+                "hoursThisWeek": 20.41,
+                "productivity": 36.45,
+                "trend": -14.5
+            },
+            {
+                "id": 10,
+                "roomId": 1,
+                "empId": 15,
+                "name": "Giridhar D",
+                "phoneNo": "8660304942",
+                "avatar": "/file/v1/image/2ddb6c.jpg",
+                "status": "Active",
+                "room": "CS Lab",
+                "hoursThisWeek": 22.5,
+                "productivity": 40.18,
+                "trend": 13.98
+            },
+            {
+                "id": 12,
+                "roomId": 3,
+                "empId": 9,
+                "name": "Vilas CP",
+                "phoneNo": "9845263712",
+                "avatar": "/file/v1/image/2a80df.jpeg",
+                "status": "Active",
+                "room": "Cafeteria",
+                "hoursThisWeek": 16.15,
+                "productivity": 28.84,
+                "trend": -10.67
+            },
+            {
+                "id": 13,
+                "roomId": 3,
+                "empId": 11,
+                "name": "Tejas Krishna",
+                "phoneNo": "8105516094",
+                "avatar": "/file/v1/image/2cb1d8.jpeg",
+                "status": "Active",
+                "room": "Cafeteria",
+                "hoursThisWeek": 15.59,
+                "productivity": 27.84,
+                "trend": -12.81
+            },
+            {
+                "id": 14,
+                "roomId": 3,
+                "empId": 7,
+                "name": "Manoja D",
+                "phoneNo": "9902798895",
+                "avatar": "/file/v1/image/242ad1.jpg",
+                "status": "Active",
+                "room": "Cafeteria",
+                "hoursThisWeek": 20.56,
+                "productivity": 36.71,
+                "trend": -6.76
+            },
+            {
+                "id": 15,
+                "roomId": 3,
+                "empId": 12,
+                "name": "Aryan Choudhary",
+                "phoneNo": "8107288787",
+                "avatar": "/file/v1/image/94698a.jpg",
+                "status": "Active",
+                "room": "Cafeteria",
+                "hoursThisWeek": 27.77,
+                "productivity": 49.59,
+                "trend": 43.37
+            },
+            {
+                "id": 16,
+                "roomId": 3,
+                "empId": 13,
+                "name": "Aditya Srinivasan",
+                "phoneNo": "9880284141",
+                "avatar": "/file/v1/image/32e470.jpg",
+                "status": "Active",
+                "room": "Cafeteria",
+                "hoursThisWeek": 17.48,
+                "productivity": 31.21,
+                "trend": 19.07
+            },
+            {
+                "id": 17,
+                "roomId": 3,
+                "empId": 14,
+                "name": "Rahul S",
+                "phoneNo": "9980941652",
+                "avatar": "/file/v1/image/f16f3f.jpg",
+                "status": "Active",
+                "room": "Cafeteria",
+                "hoursThisWeek": 20.42,
+                "productivity": 36.46,
+                "trend": -5.38
+            },
+            {
+                "id": 18,
+                "roomId": 3,
+                "empId": 15,
+                "name": "Giridhar D",
+                "phoneNo": "8660304942",
+                "avatar": "/file/v1/image/2ddb6c.jpg",
+                "status": "Active",
+                "room": "Cafeteria",
+                "hoursThisWeek": 26.35,
+                "productivity": 47.05,
+                "trend": 17.53
+            },
+            {
+                "id": 19,
+                "roomId": 4,
+                "empId": 9,
+                "name": "Vilas CP",
+                "phoneNo": "9845263712",
+                "avatar": "/file/v1/image/2a80df.jpeg",
+                "status": "Active",
+                "room": "AIML Lab",
+                "hoursThisWeek": 20.54,
+                "productivity": 36.68,
+                "trend": -2.79
+            },
+            {
+                "id": 20,
+                "roomId": 4,
+                "empId": 11,
+                "name": "Tejas Krishna",
+                "phoneNo": "8105516094",
+                "avatar": "/file/v1/image/2cb1d8.jpeg",
+                "status": "Active",
+                "room": "AIML Lab",
+                "hoursThisWeek": 21.08,
+                "productivity": 37.64,
+                "trend": 9.51
+            },
+            {
+                "id": 21,
+                "roomId": 4,
+                "empId": 7,
+                "name": "Manoja D",
+                "phoneNo": "9902798895",
+                "avatar": "/file/v1/image/242ad1.jpg",
+                "status": "Active",
+                "room": "AIML Lab",
+                "hoursThisWeek": 24.87,
+                "productivity": 44.41,
+                "trend": 3.54
+            },
+            {
+                "id": 22,
+                "roomId": 4,
+                "empId": 12,
+                "name": "Aryan Choudhary",
+                "phoneNo": "8107288787",
+                "avatar": "/file/v1/image/94698a.jpg",
+                "status": "Active",
+                "room": "AIML Lab",
+                "hoursThisWeek": 23.08,
+                "productivity": 41.21,
+                "trend": 3.64
+            },
+            {
+                "id": 23,
+                "roomId": 4,
+                "empId": 13,
+                "name": "Aditya Srinivasan",
+                "phoneNo": "9880284141",
+                "avatar": "/file/v1/image/32e470.jpg",
+                "status": "Active",
+                "room": "AIML Lab",
+                "hoursThisWeek": 16.58,
+                "productivity": 29.61,
+                "trend": 26.18
+            },
+            {
+                "id": 24,
+                "roomId": 4,
+                "empId": 14,
+                "name": "Rahul S",
+                "phoneNo": "9980941652",
+                "avatar": "/file/v1/image/f16f3f.jpg",
+                "status": "Active",
+                "room": "AIML Lab",
+                "hoursThisWeek": 15.41,
+                "productivity": 27.52,
+                "trend": -39.88
+            },
+            {
+                "id": 25,
+                "roomId": 4,
+                "empId": 15,
+                "name": "Giridhar D",
+                "phoneNo": "8660304942",
+                "avatar": "/file/v1/image/2ddb6c.jpg",
+                "status": "Active",
+                "room": "AIML Lab",
+                "hoursThisWeek": 20.41,
+                "productivity": 36.45,
+                "trend": -4.18
+            },
+            {
+                "id": 26,
+                "roomId": 5,
+                "empId": 9,
+                "name": "Vilas CP",
+                "phoneNo": "9845263712",
+                "avatar": "/file/v1/image/2a80df.jpeg",
+                "status": "Active",
+                "room": "Research Department",
+                "hoursThisWeek": 23.82,
+                "productivity": 42.54,
+                "trend": 14.19
+            },
+            {
+                "id": 27,
+                "roomId": 5,
+                "empId": 7,
+                "name": "Manoja D",
+                "phoneNo": "9902798895",
+                "avatar": "/file/v1/image/242ad1.jpg",
+                "status": "Active",
+                "room": "Research Department",
+                "hoursThisWeek": 17.43,
+                "productivity": 31.12,
+                "trend": -21.56
+            },
+            {
+                "id": 28,
+                "roomId": 5,
+                "empId": 11,
+                "name": "Tejas Krishna",
+                "phoneNo": "8105516094",
+                "avatar": "/file/v1/image/2cb1d8.jpeg",
+                "status": "Active",
+                "room": "Research Department",
+                "hoursThisWeek": 24.02,
+                "productivity": 42.89,
+                "trend": 39
+            },
+            {
+                "id": 29,
+                "roomId": 5,
+                "empId": 12,
+                "name": "Aryan Choudhary",
+                "phoneNo": "8107288787",
+                "avatar": "/file/v1/image/94698a.jpg",
+                "status": "Active",
+                "room": "Research Department",
+                "hoursThisWeek": 22.97,
+                "productivity": 41.02,
+                "trend": -4.29
+            },
+            {
+                "id": 30,
+                "roomId": 5,
+                "empId": 13,
+                "name": "Aditya Srinivasan",
+                "phoneNo": "9880284141",
+                "avatar": "/file/v1/image/32e470.jpg",
+                "status": "Active",
+                "room": "Research Department",
+                "hoursThisWeek": 16.18,
+                "productivity": 28.89,
+                "trend": -18.9
+            },
+            {
+                "id": 31,
+                "roomId": 5,
+                "empId": 14,
+                "name": "Rahul S",
+                "phoneNo": "9980941652",
+                "avatar": "/file/v1/image/f16f3f.jpg",
+                "status": "Active",
+                "room": "Research Department",
+                "hoursThisWeek": 28.03,
+                "productivity": 50.05,
+                "trend": 17.48
+            },
+            {
+                "id": 32,
+                "roomId": 5,
+                "empId": 15,
+                "name": "Giridhar D",
+                "phoneNo": "8660304942",
+                "avatar": "/file/v1/image/2ddb6c.jpg",
+                "status": "Active",
+                "room": "Research Department",
+                "hoursThisWeek": 23.04,
+                "productivity": 41.14,
+                "trend": -0.26
+            }
+        ],
+        "weeklyTrendData": [
+            {
+                "week": "Week 1",
+                "totalHours": 589.7,
+                "avgProductivity": 75.22
+            },
+            {
+                "week": "Week 2",
+                "totalHours": 589.41,
+                "avgProductivity": 75.18
+            },
+            {
+                "week": "Week 3",
+                "totalHours": 601.32,
+                "avgProductivity": 76.7
+            },
+            {
+                "week": "Week 4",
+                "totalHours": 571.9,
+                "avgProductivity": 72.95
+            }
+        ],
+        "hoursWorkedData": [
+            {
+                "day": "Wed",
+                "This Week": 98.35,
+                "Last Week": 84.76
+            },
+            {
+                "day": "Tue",
+                "This Week": 84.34,
+                "Last Week": 82.36
+            },
+            {
+                "day": "Mon",
+                "This Week": 76.41,
+                "Last Week": 89.44
+            },
+            {
+                "day": "Sun",
+                "This Week": 77.11,
+                "Last Week": 85.16
+            },
+            {
+                "day": "Sat",
+                "This Week": 84.47,
+                "Last Week": 79.46
+            },
+            {
+                "day": "Fri",
+                "This Week": 76.89,
+                "Last Week": 80.91
+            },
+            {
+                "day": "Thu",
+                "This Week": 92.14,
+                "Last Week": 87.31
+            }
+        ],
+        "productivityData": [
+            {
+                "name": "Manoja D",
+                "hours": 394.36,
+                "productivity": 78.87
+            },
+            {
+                "name": "Vilas CP",
+                "hours": 370.82,
+                "productivity": 74.76
+            },
+            {
+                "name": "Tejas Krishna",
+                "hours": 341.96,
+                "productivity": 68.94
+            },
+            {
+                "name": "Aryan Choudhary",
+                "hours": 386.14,
+                "productivity": 77.85
+            },
+            {
+                "name": "Aditya Srinivasan",
+                "hours": 345.12,
+                "productivity": 69.58
+            },
+            {
+                "name": "Rahul S",
+                "hours": 398.67,
+                "productivity": 80.38
+            },
+            {
+                "name": "Giridhar D",
+                "hours": 389.26,
+                "productivity": 78.48
+            }
+        ],
+        "departmentHoursData": [
+            {
+                "name": "Cafeteria",
+                "hours": 628.86
+            },
+            {
+                "name": "AIML Lab",
+                "hours": 658.84
+            },
+            {
+                "name": "CS Lab",
+                "hours": 660.13
+            },
+            {
+                "name": "Research Department",
+                "hours": 678.49
+            }
+        ],
+        "topPerformers": [
+            {
+                "name": "Rahul S",
+                "hours": 398.67,
+                "productivity": 80.38
+            },
+            {
+                "name": "Manoja D",
+                "hours": 394.36,
+                "productivity": 78.87
+            },
+            {
+                "name": "Giridhar D",
+                "hours": 389.26,
+                "productivity": 78.48
+            }
+        ]
+    }
+}
 
-const employeeData = [
-    { id: 1, name: "Alice Johnson", role: "Software Engineer", room: "Room 1", hoursThisWeek: 40, productivity: 85, trend: 5, status: "Active",avatar: '/api/placeholder/40/40' },
-    { id: 2, name: "Bob Smith", role: "UI/UX Designer", room: "Room 2", hoursThisWeek: 38, productivity: 78, trend: 3, status: "Active",avatar: '/api/placeholder/40/40'},
-    { id: 3, name: "Charlie Brown", role: "Backend Developer", room: "Room 1", hoursThisWeek: 42, productivity: 90, trend: 7, status: "Active",avatar: '/api/placeholder/40/40' },
-    { id: 4, name: "David Lee", role: "Marketing Manager", room: "Room 3", hoursThisWeek: 35, productivity: 70, trend: 2, status: "Active",avatar: '/api/placeholder/40/40' },
-    { id: 5, name: "Emma Wilson", role: "Frontend Developer", room: "Room 2", hoursThisWeek: 39, productivity: 80, trend: 4, status: "Active",avatar: '/api/placeholder/40/40' },
-    { id: 6, name: "Fiona Taylor", role: "Graphic Designer", room: "Room 3", hoursThisWeek: 36, productivity: 76, trend: 3, status: "Active" ,avatar: '/api/placeholder/40/40'},
-    { id: 7, name: "George Anderson", role: "HR Specialist", room: "Room 1", hoursThisWeek: 34, productivity: 72, trend: 1, status: "Active" ,avatar: '/api/placeholder/40/40'},
-    { id: 8, name: "Hannah Clark", role: "DevOps Engineer", room: "Room 2", hoursThisWeek: 41, productivity: 88, trend: 6, status: "Active",avatar: '/api/placeholder/40/40' },
-    { id: 9, name: "Ian Wright", role: "Content Writer", room: "Room 3", hoursThisWeek: 37, productivity: 74, trend: 2, status: "Active",avatar: '/api/placeholder/40/40' },
-  ];
+// Data processing
+const employeeData = apiResponse.data.employeeData;
+const weeklyTrendData = apiResponse.data.weeklyTrendData;
+const hoursWorkedData = apiResponse.data.hoursWorkedData.sort(
+  (a, b) =>
+    ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"].indexOf(a.day) -
+    ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"].indexOf(b.day)
+);
+const productivityData = apiResponse.data.productivityData;
+const departmentHoursData = apiResponse.data.departmentHoursData;
+const topPerformers = apiResponse.data.topPerformers;
 
-const hoursWorkedData = [
-  { day: 'Mon', 'This Week': 45, 'Last Week': 40 },
-  { day: 'Tue', 'This Week': 48, 'Last Week': 42 },
-  { day: 'Wed', 'This Week': 47, 'Last Week': 45 },
-  { day: 'Thu', 'This Week': 49, 'Last Week': 44 },
-  { day: 'Fri', 'This Week': 45, 'Last Week': 40 },
-  { day: 'Sat', 'This Week': 35, 'Last Week': 30 },
-  { day: 'Sun', 'This Week': 25, 'Last Week': 20 },
-];
-
-const productivityData = [
-  { name: 'Alex J.', productivity: 94, hours: 47 },
-  { name: 'Sarah M.', productivity: 88, hours: 42 },
-  { name: 'Michael C.', productivity: 92, hours: 45 },
-  { name: 'Emma W.', productivity: 82, hours: 38 },
-  { name: 'David K.', productivity: 90, hours: 44 },
-];
-
-const departmentHoursData = [
-  { name: 'Room1', hours: 92 },
-  { name: 'Room2', hours: 42 },
-  { name: 'Room3', hours: 38 },
-
-];
-
-const topPerformers = [
-  { id: 1, name: 'Alex Johnson', productivity: 94, increase: '+12%' },
-  { id: 3, name: 'Michael Chen', productivity: 92, increase: '+8%' },
-  { id: 5, name: 'David Kim', productivity: 90, increase: '+5%' },
-];
-
-// Monthly trend data for area chart
-const weeklyTrendData = [
-    { week: 'Week 1', totalHours: 300, avgProductivity: 50 },
-    { week: 'Week 2', totalHours: 600, avgProductivity: 85 },
-    { week: 'Week 3', totalHours: 900, avgProductivity: 87 },
-    { week: 'Week 4', totalHours: 1200, avgProductivity: 90 },
-    { week: 'Week 5', totalHours: 1500, avgProductivity: 92 },
-  ];
-  
-
-// Skill matrix data for radar chart
+// Skill matrix data remains the same
 const skillMatrixData = [
-  { subject: 'Coding', A: 120, B: 110, fullMark: 150 },
-  { subject: 'Communication', A: 98, B: 130, fullMark: 150 },
-  { subject: 'Teamwork', A: 86, B: 130, fullMark: 150 },
-  { subject: 'Problem Solving', A: 99, B: 100, fullMark: 150 },
-  { subject: 'Time Management', A: 85, B: 90, fullMark: 150 },
-  { subject: 'Technical Knowledge', A: 65, B: 85, fullMark: 150 },
+  { subject: "Coding", A: 120, B: 110, fullMark: 150 },
+  { subject: "Communication", A: 98, B: 130, fullMark: 150 },
+  { subject: "Teamwork", A: 86, B: 130, fullMark: 150 },
+  { subject: "Problem Solving", A: 99, B: 100, fullMark: 150 },
+  { subject: "Time Management", A: 85, B: 90, fullMark: 150 },
+  { subject: "Technical Knowledge", A: 65, B: 85, fullMark: 150 },
 ];
 
-
-
-
-// Project contribution data
-
-
-const COLORS = ['#0088FE', '#00C49F', '#FFBB28', '#FF8042', '#8884d8', '#83a6ed'];
+// Constants
+const COLORS = [
+  "#0088FE",
+  "#00C49F",
+  "#FFBB28",
+  "#FF8042",
+  "#8884d8",
+  "#83a6ed",
+];
 const RADIAN = Math.PI / 180;
 const uniqueRooms = [...new Set(employeeData.map((employee) => employee.room))];
 
 // Custom label for pie chart
-const renderCustomizedLabel = ({ cx, cy, midAngle, innerRadius, outerRadius, percent, index }) => {
+const renderCustomizedLabel = ({
+  cx,
+  cy,
+  midAngle,
+  innerRadius,
+  outerRadius,
+  percent,
+  index,
+}) => {
   const radius = innerRadius + (outerRadius - innerRadius) * 0.5;
   const x = cx + radius * Math.cos(-midAngle * RADIAN);
   const y = cy + radius * Math.sin(-midAngle * RADIAN);
 
   return (
-    <text x={x} y={y} fill="white" textAnchor={x > cx ? 'start' : 'end'} dominantBaseline="central">
+    <text
+      x={x}
+      y={y}
+      fill="white"
+      textAnchor={x > cx ? "start" : "end"}
+      dominantBaseline="central"
+    >
       {`${(percent * 100).toFixed(0)}%`}
     </text>
   );
 };
 
 export default function EmployeeDashboard() {
-  const [timeRange, setTimeRange] = useState('week');
+  const [timeRange, setTimeRange] = useState("week");
   const [selectedRoom, setSelectedRoom] = useState("all");
+
+  // Calculate metrics
+  const totalHours = useMemo(
+    () =>
+      employeeData.reduce((sum, emp) => sum + emp.hoursThisWeek, 0).toFixed(1),
+    [employeeData]
+  );
+
+  const avgProductivity = useMemo(
+    () =>
+      (
+        employeeData.reduce((sum, emp) => sum + emp.productivity, 0) /
+        employeeData.length
+      ).toFixed(1),
+    [employeeData]
+  );
+
+  const activeEmployees = useMemo(
+    () =>
+      new Set(
+        employeeData
+          .filter((emp) => emp.status === "Active")
+          .map((emp) => emp.empId)
+      ).size,
+    [employeeData]
+  );
 
   return (
     <div className="p-6 bg-gradient-to-br from-gray-50 to-blue-50 min-h-screen">
+      {/* Dashboard Header */}
       <div className="flex flex-col lg:flex-row items-start lg:items-center justify-between mb-8 gap-4">
         <div>
-          <h1 className="text-3xl font-bold text-gray-800">Employee Productivity Dashboard</h1>
-          <p className="text-gray-500 mt-1">Track working hours and employee performance</p>
+          <h1 className="text-3xl font-bold text-gray-800">
+            Employee Productivity Dashboard
+          </h1>
+          <p className="text-gray-500 mt-1">
+            Track working hours and employee performance
+          </p>
         </div>
         <div className="flex gap-4 flex-wrap">
           <Select defaultValue="week" onValueChange={setTimeRange}>
@@ -133,7 +687,7 @@ export default function EmployeeDashboard() {
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm font-medium text-gray-500">Total Hours</p>
-                <h3 className="text-2xl font-bold mt-1">294 hrs</h3>
+                <h3 className="text-2xl font-bold mt-1">{totalHours} hrs</h3>
                 <p className="text-xs text-green-500 mt-1 flex items-center">
                   <ChevronsUpDown className="h-4 w-4 mr-1" />
                   +12% from last {timeRange}
@@ -150,8 +704,10 @@ export default function EmployeeDashboard() {
           <CardContent className="pt-6">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm font-medium text-gray-500">Avg. Productivity</p>
-                <h3 className="text-2xl font-bold mt-1">89.2%</h3>
+                <p className="text-sm font-medium text-gray-500">
+                  Avg. Productivity
+                </p>
+                <h3 className="text-2xl font-bold mt-1">{avgProductivity}%</h3>
                 <p className="text-xs text-green-500 mt-1 flex items-center">
                   <ChevronsUpDown className="h-4 w-4 mr-1" />
                   +5% from last {timeRange}
@@ -168,9 +724,15 @@ export default function EmployeeDashboard() {
           <CardContent className="pt-6">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm font-medium text-gray-500">Top Performer</p>
-                <h3 className="text-2xl font-bold mt-1">Alex J.</h3>
-                <p className="text-xs text-gray-500 mt-1">94% productivity rate</p>
+                <p className="text-sm font-medium text-gray-500">
+                  Top Performer
+                </p>
+                <h3 className="text-2xl font-bold mt-1">
+                  {topPerformers[0]?.name}
+                </h3>
+                <p className="text-xs text-gray-500 mt-1">
+                  {topPerformers[0]?.productivity}% productivity rate
+                </p>
               </div>
               <div className="h-12 w-12 bg-yellow-100 rounded-full flex items-center justify-center">
                 <Award className="h-6 w-6 text-yellow-600" />
@@ -183,8 +745,10 @@ export default function EmployeeDashboard() {
           <CardContent className="pt-6">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm font-medium text-gray-500">Active Employees</p>
-                <h3 className="text-2xl font-bold mt-1">5/5</h3>
+                <p className="text-sm font-medium text-gray-500">
+                  Active Employees
+                </p>
+                <h3 className="text-2xl font-bold mt-1">{activeEmployees}</h3>
                 <p className="text-xs text-gray-500 mt-1">100% attendance</p>
               </div>
               <div className="h-12 w-12 bg-purple-100 rounded-full flex items-center justify-center">
@@ -199,19 +763,27 @@ export default function EmployeeDashboard() {
       <Card className="border-none shadow-lg mb-8">
         <CardHeader>
           <CardTitle>Annual Productivity Trends</CardTitle>
-          <CardDescription>Total hours and avg. productivity percentage by month</CardDescription>
+          <CardDescription>
+            Total hours and avg. productivity percentage by month
+          </CardDescription>
         </CardHeader>
         <CardContent>
           <ResponsiveContainer width="100%" height={300}>
             <AreaChart data={weeklyTrendData}>
               <defs>
                 <linearGradient id="colorHours" x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="5%" stopColor="#8884d8" stopOpacity={0.8}/>
-                  <stop offset="95%" stopColor="#8884d8" stopOpacity={0}/>
+                  <stop offset="5%" stopColor="#8884d8" stopOpacity={0.8} />
+                  <stop offset="95%" stopColor="#8884d8" stopOpacity={0} />
                 </linearGradient>
-                <linearGradient id="colorProductivity" x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="5%" stopColor="#82ca9d" stopOpacity={0.8}/>
-                  <stop offset="95%" stopColor="#82ca9d" stopOpacity={0}/>
+                <linearGradient
+                  id="colorProductivity"
+                  x1="0"
+                  y1="0"
+                  x2="0"
+                  y2="1"
+                >
+                  <stop offset="5%" stopColor="#82ca9d" stopOpacity={0.8} />
+                  <stop offset="95%" stopColor="#82ca9d" stopOpacity={0} />
                 </linearGradient>
               </defs>
               <XAxis dataKey="week" />
@@ -220,21 +792,21 @@ export default function EmployeeDashboard() {
               <CartesianGrid strokeDasharray="3 3" />
               <Tooltip />
               <Legend />
-              <Area 
-                type="monotone" 
-                dataKey="totalHours" 
+              <Area
+                type="monotone"
+                dataKey="totalHours"
                 yAxisId="left"
-                stroke="#8884d8" 
-                fillOpacity={1} 
-                fill="url(#colorHours)" 
+                stroke="#8884d8"
+                fillOpacity={1}
+                fill="url(#colorHours)"
               />
-              <Area 
-                type="monotone" 
-                dataKey="avgProductivity" 
+              <Area
+                type="monotone"
+                dataKey="avgProductivity"
                 yAxisId="right"
-                stroke="#82ca9d" 
-                fillOpacity={1} 
-                fill="url(#colorProductivity)" 
+                stroke="#82ca9d"
+                fillOpacity={1}
+                fill="url(#colorProductivity)"
               />
             </AreaChart>
           </ResponsiveContainer>
@@ -246,7 +818,9 @@ export default function EmployeeDashboard() {
         <Card className="lg:col-span-2 border-none shadow-lg">
           <CardHeader>
             <CardTitle>Hours Worked Comparison</CardTitle>
-            <CardDescription>This {timeRange} vs last {timeRange}</CardDescription>
+            <CardDescription>
+              This {timeRange} vs last {timeRange}
+            </CardDescription>
           </CardHeader>
           <CardContent>
             <ResponsiveContainer width="100%" height={300}>
@@ -256,18 +830,18 @@ export default function EmployeeDashboard() {
                 <YAxis />
                 <Tooltip />
                 <Legend />
-                <Line 
-                  type="monotone" 
-                  dataKey="This Week" 
-                  stroke="#0088FE" 
-                  strokeWidth={2} 
-                  activeDot={{ r: 8 }} 
+                <Line
+                  type="monotone"
+                  dataKey="This Week"
+                  stroke="#0088FE"
+                  strokeWidth={2}
+                  activeDot={{ r: 8 }}
                 />
-                <Line 
-                  type="monotone" 
-                  dataKey="Last Week" 
-                  stroke="#82ca9d" 
-                  strokeWidth={2} 
+                <Line
+                  type="monotone"
+                  dataKey="Last Week"
+                  stroke="#82ca9d"
+                  strokeWidth={2}
                 />
               </LineChart>
             </ResponsiveContainer>
@@ -293,7 +867,10 @@ export default function EmployeeDashboard() {
                   label={renderCustomizedLabel}
                 >
                   {departmentHoursData.map((entry, index) => (
-                    <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                    <Cell
+                      key={`cell-${index}`}
+                      fill={COLORS[index % COLORS.length]}
+                    />
                   ))}
                 </Pie>
                 <Tooltip />
@@ -304,13 +881,13 @@ export default function EmployeeDashboard() {
         </Card>
       </div>
 
-      
-
       {/* New: Team Skill Matrix Section */}
       <Card className="border-none shadow-lg mb-8">
         <CardHeader>
           <CardTitle>Team Skill Matrix</CardTitle>
-          <CardDescription>Comparing top performer vs. team average</CardDescription>
+          <CardDescription>
+            Comparing top performer vs. team average
+          </CardDescription>
         </CardHeader>
         <CardContent>
           <ResponsiveContainer width="100%" height={400}>
@@ -318,8 +895,20 @@ export default function EmployeeDashboard() {
               <PolarGrid />
               <PolarAngleAxis dataKey="subject" />
               <PolarRadiusAxis />
-              <Radar name="Top Performer" dataKey="A" stroke="#8884d8" fill="#8884d8" fillOpacity={0.6} />
-              <Radar name="Team Average" dataKey="B" stroke="#82ca9d" fill="#82ca9d" fillOpacity={0.6} />
+              <Radar
+                name="Top Performer"
+                dataKey="A"
+                stroke="#8884d8"
+                fill="#8884d8"
+                fillOpacity={0.6}
+              />
+              <Radar
+                name="Team Average"
+                dataKey="B"
+                stroke="#82ca9d"
+                fill="#82ca9d"
+                fillOpacity={0.6}
+              />
               <Legend />
               <Tooltip />
             </RadarChart>
@@ -332,7 +921,9 @@ export default function EmployeeDashboard() {
         <Card className="lg:col-span-2 border-none shadow-lg">
           <CardHeader>
             <CardTitle>Employee Productivity vs Hours Worked</CardTitle>
-            <CardDescription>Productivity score based on completed tasks per hour</CardDescription>
+            <CardDescription>
+              Productivity score based on completed tasks per hour
+            </CardDescription>
           </CardHeader>
           <CardContent>
             <ResponsiveContainer width="100%" height={300}>
@@ -346,31 +937,47 @@ export default function EmployeeDashboard() {
                 <YAxis yAxisId="right" orientation="right" stroke="#FF8042" />
                 <Tooltip />
                 <Legend />
-                <Bar yAxisId="left" dataKey="productivity" name="Productivity %" fill="#0088FE" />
-                <Bar yAxisId="right" dataKey="hours" name="Hours Worked" fill="#FF8042" />
+                <Bar
+                  yAxisId="left"
+                  dataKey="productivity"
+                  name="Productivity %"
+                  fill="#0088FE"
+                />
+                <Bar
+                  yAxisId="right"
+                  dataKey="hours"
+                  name="Hours Worked"
+                  fill="#FF8042"
+                />
               </BarChart>
             </ResponsiveContainer>
           </CardContent>
         </Card>
-
-        
       </div>
 
       {/* Top Performers Section with enhanced UI */}
       <Card className="border-none shadow-lg mb-8">
         <CardHeader>
           <CardTitle>Top Performers Spotlight</CardTitle>
-          <CardDescription>Highest productivity this {timeRange}</CardDescription>
+          <CardDescription>
+            Highest productivity this {timeRange}
+          </CardDescription>
         </CardHeader>
         <CardContent>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
             {topPerformers.map((employee, index) => (
-              <div key={employee.id} className="bg-white rounded-lg p-6 shadow-md border border-gray-100">
+              <div
+                key={employee.id}
+                className="bg-white rounded-lg p-6 shadow-md border border-gray-100"
+              >
                 <div className="flex flex-col items-center text-center">
                   <div className="relative">
                     <Avatar className="h-20 w-20 mb-4">
                       <AvatarFallback className="bg-blue-100 text-blue-800 text-xl">
-                        {employee.name.split(' ').map(n => n[0]).join('')}
+                        {employee.name
+                          .split(" ")
+                          .map((n) => n[0])
+                          .join("")}
                       </AvatarFallback>
                     </Avatar>
                     {index === 0 && (
@@ -383,19 +990,28 @@ export default function EmployeeDashboard() {
                   </div>
                   <h3 className="font-semibold text-lg">{employee.name}</h3>
                   <p className="text-gray-500 text-sm mb-2">
-                    {index === 0 ? 'Frontend Developer' : 
-                     index === 1 ? 'Backend Developer' : 'Data Analyst'}
+                    {index === 0
+                      ? "Frontend Developer"
+                      : index === 1
+                      ? "Backend Developer"
+                      : "Data Analyst"}
                   </p>
                   <div className="w-full mb-2">
                     <div className="flex justify-between text-sm mb-1">
                       <span>Productivity</span>
-                      <span className="font-medium">{employee.productivity}%</span>
+                      <span className="font-medium">
+                        {employee.productivity}%
+                      </span>
                     </div>
                     <Progress value={employee.productivity} className="h-2" />
                   </div>
                   <div className="flex items-center mt-2">
-                    <span className="text-green-500 font-medium">{employee.increase}</span>
-                    <span className="text-gray-500 text-sm ml-1">from last {timeRange}</span>
+                    <span className="text-green-500 font-medium">
+                      {employee.increase}
+                    </span>
+                    <span className="text-gray-500 text-sm ml-1">
+                      from last {timeRange}
+                    </span>
                   </div>
                   <div className="mt-4 flex space-x-2">
                     <Badge className="bg-blue-100 text-blue-800 hover:bg-blue-200">
@@ -411,126 +1027,117 @@ export default function EmployeeDashboard() {
           </div>
         </CardContent>
       </Card>
-
-      {/* New: Recent Activity Timeline */}
-      <Card className="border-none shadow-lg mb-8">
-        <CardHeader>
-          <CardTitle>Recent Activity Timeline</CardTitle>
-          <CardDescription>Employee activities from today</CardDescription>
-        </CardHeader>
-        <CardContent>
-          <div className="space-y-8">
-            {[
-              { time: '9:30 AM', user: 'Alex Johnson', action: 'Started work on Project Alpha', icon: <Clock className="h-5 w-5 text-blue-500" /> },
-              { time: '10:15 AM', user: 'Sarah Miller', action: 'Completed 3 design tasks', icon: <BookOpen className="h-5 w-5 text-green-500" /> },
-              { time: '11:45 AM', user: 'Michael Chen', action: 'Fixed critical bug in backend API', icon: <Zap className="h-5 w-5 text-yellow-500" /> },
-              { time: '12:30 PM', user: 'Team', action: 'Lunch break', icon: <Coffee className="h-5 w-5 text-orange-500" /> },
-              { time: '2:00 PM', user: 'Emma Wilson', action: 'Started sprint planning meeting', icon: <BellRing className="h-5 w-5 text-purple-500" /> }
-            ].map((activity, index) => (
-              <div key={index} className="flex">
-                <div className="flex flex-col items-center mr-4">
-                  <div className="flex items-center justify-center h-10 w-10 rounded-full bg-blue-50">
-                    {activity.icon}
-                  </div>
-                  {index < 4 && <div className="h-full w-0.5 bg-gray-200 mt-2"></div>}
-                </div>
-                <div>
-                  <div className="flex items-center">
-                    <p className="font-medium">{activity.user}</p>
-                    <Badge variant="outline" className="ml-2">{activity.time}</Badge>
-                  </div>
-                  <p className="text-gray-600 mt-1">{activity.action}</p>
-                </div>
-              </div>
-            ))}
-          </div>
-        </CardContent>
-      </Card>
-
       {/* Employee List Section with enhanced UI */}
       <Card className="border-none shadow-lg">
-      <Tabs defaultValue="all" onValueChange={setSelectedRoom}>
-        <CardHeader className="pb-0">
-          <div className="flex items-center justify-between">
-            <CardTitle>Employee Overview</CardTitle>
-            <TabsList>
-              <TabsTrigger value="all">All Employees</TabsTrigger>
-              {uniqueRooms.map((room) => (
-                <TabsTrigger key={room} value={room}>{room}</TabsTrigger>
-              ))}
-            </TabsList>
-          </div>
-        </CardHeader>
-        <CardContent>
-          {["all", ...uniqueRooms].map((tab) => (
-            <TabsContent key={tab} value={tab} className="mt-0 pt-4">
-              <div className="overflow-x-auto">
-                <table className="w-full">
-                  <thead>
-                    <tr className="text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      <th className="px-6 py-3">Employee</th>
-                      <th className="px-6 py-3">Room</th>
-                      <th className="px-6 py-3">Hours This Week</th>
-                      <th className="px-6 py-3">Productivity</th>
-                      <th className="px-6 py-3">Trend</th>
-                      <th className="px-6 py-3">Status</th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-gray-200">
-                    {employeeData
-                      .filter((employee) => tab === "all" || employee.room === tab)
-                      .map((employee) => (
-                        <tr key={employee.id} className="hover:bg-gray-50">
-                          <td className="px-6 py-4">
-                            <div className="flex items-center">
-                              <Avatar className="h-10 w-10">
-                                <AvatarFallback className="bg-blue-100 text-blue-800">
-                                  {employee.name.split(" ").map((n) => n[0]).join("")}
-                                </AvatarFallback>
-                              </Avatar>
-                              <div className="ml-4">
-                                <div className="font-medium text-gray-900">{employee.name}</div>
-                                <div className="text-sm text-gray-500">{employee.role}</div>
+        <Tabs defaultValue="all" onValueChange={setSelectedRoom}>
+          <CardHeader className="pb-0">
+            <div className="flex items-center justify-between">
+              <CardTitle>Employee Overview</CardTitle>
+              <TabsList>
+                <TabsTrigger value="all">All Employees</TabsTrigger>
+                {uniqueRooms.map((room) => (
+                  <TabsTrigger key={room} value={room}>
+                    {room}
+                  </TabsTrigger>
+                ))}
+              </TabsList>
+            </div>
+          </CardHeader>
+          <CardContent>
+            {["all", ...uniqueRooms].map((tab) => (
+              <TabsContent key={tab} value={tab} className="mt-0 pt-4">
+                <div className="overflow-x-auto">
+                  <table className="w-full">
+                    <thead>
+                      <tr className="text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        <th className="px-6 py-3">Employee</th>
+                        <th className="px-6 py-3">Room</th>
+                        <th className="px-6 py-3">Hours This Week</th>
+                        <th className="px-6 py-3">Productivity</th>
+                        <th className="px-6 py-3">Trend</th>
+                        <th className="px-6 py-3">Status</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-gray-200">
+                      {employeeData
+                        .filter(
+                          (employee) => tab === "all" || employee.room === tab
+                        )
+                        .map((employee) => (
+                          <tr key={employee.id} className="hover:bg-gray-50">
+                            <td className="px-6 py-4">
+                              <div className="flex items-center">
+                                <Avatar className="h-10 w-10">
+                                  <AvatarFallback className="bg-blue-100 text-blue-800">
+                                    {employee.name
+                                      .split(" ")
+                                      .map((n) => n[0])
+                                      .join("")}
+                                  </AvatarFallback>
+                                </Avatar>
+                                <div className="ml-4">
+                                  <div className="font-medium text-gray-900">
+                                    {employee.name}
+                                  </div>
+                                  <div className="text-sm text-gray-500">
+                                    {employee.role}
+                                  </div>
+                                </div>
                               </div>
-                            </div>
-                          </td>
-                          <td className="px-6 py-4 text-sm">
-                            <Badge variant="outline" className="bg-blue-50 text-blue-700 border-blue-200">
-                              {employee.room}
-                            </Badge>
-                          </td>
-                          <td className="px-6 py-4 text-sm font-medium">
-                            {employee.hoursThisWeek} hrs
-                          </td>
-                          <td className="px-6 py-4">
-                            <div className="flex items-center">
-                              <Progress value={employee.productivity} className="h-2 w-full max-w-xs" />
-                              <span className="ml-2 text-sm font-medium">{employee.productivity}%</span>
-                            </div>
-                          </td>
-                          <td className="px-6 py-4">
-                            <Badge className="bg-green-100 text-green-800 hover:bg-green-200">
-                              {employee.trend > 0 ? `+${employee.trend}%` : `${employee.trend}%`}
-                            </Badge>
-                          </td>
-                          <td className="px-6 py-4">
-                            <div className="flex items-center">
-                              <div
-                                className={`h-2 w-2 rounded-full mr-2 ${employee.status === "Active" ? "bg-green-500" : "bg-red-500"}`}
-                              ></div>
-                              <span className="text-sm text-gray-500">{employee.status}</span>
-                            </div>
-                          </td>
-                        </tr>
-                      ))}
-                  </tbody>
-                </table>
-              </div>
-            </TabsContent>
-          ))}
-        </CardContent>
-      </Tabs>
-    </Card>
+                            </td>
+                            <td className="px-6 py-4 text-sm">
+                              <Badge
+                                variant="outline"
+                                className="bg-blue-50 text-blue-700 border-blue-200"
+                              >
+                                {employee.room}
+                              </Badge>
+                            </td>
+                            <td className="px-6 py-4 text-sm font-medium">
+                              {employee.hoursThisWeek} hrs
+                            </td>
+                            <td className="px-6 py-4">
+                              <div className="flex items-center">
+                                <Progress
+                                  value={employee.productivity}
+                                  className="h-2 w-full max-w-xs"
+                                />
+                                <span className="ml-2 text-sm font-medium">
+                                  {employee.productivity}%
+                                </span>
+                              </div>
+                            </td>
+                            <td className="px-6 py-4">
+                              <Badge className="bg-green-100 text-green-800 hover:bg-green-200">
+                                {employee.trend > 0
+                                  ? `+${employee.trend}%`
+                                  : `${employee.trend}%`}
+                              </Badge>
+                            </td>
+                            <td className="px-6 py-4">
+                              <div className="flex items-center">
+                                <div
+                                  className={`h-2 w-2 rounded-full mr-2 ${
+                                    employee.status === "Active"
+                                      ? "bg-green-500"
+                                      : "bg-red-500"
+                                  }`}
+                                ></div>
+                                <span className="text-sm text-gray-500">
+                                  {employee.status}
+                                </span>
+                              </div>
+                            </td>
+                          </tr>
+                        ))}
+                    </tbody>
+                  </table>
+                </div>
+              </TabsContent>
+            ))}
+          </CardContent>
+        </Tabs>
+      </Card>
     </div>
   );
 }
