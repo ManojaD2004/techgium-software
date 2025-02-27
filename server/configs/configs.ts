@@ -24,4 +24,8 @@ const dbConfigs = {
   DB_RETRY_WAIT_MAX_SEC: 3,
 } as const;
 
-export { serverConfigs, envConfigs, dbConfigs };
+const pythonConfigs = {
+  INTERVAL_SEC: 3,
+} as const;
+
+export { serverConfigs, envConfigs, dbConfigs, pythonConfigs };

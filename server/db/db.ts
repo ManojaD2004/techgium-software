@@ -10,7 +10,7 @@ import {
   Room,
 } from "../types/db";
 import { getRandomInteger } from "../helpers/randomNumber";
-import { dbConfigs } from "../configs/configs";
+import { dbConfigs, pythonConfigs } from "../configs/configs";
 import { waitForNSeconds } from "../helpers/wait";
 import { randNum } from "../helpers/random";
 import {
@@ -29,6 +29,8 @@ const {
   DB_RETRY_WAIT_MAX_SEC,
   DB_RETRY_WAIT_MIN_SEC,
 } = dbConfigs;
+
+const { INTERVAL_SEC } = pythonConfigs;
 
 class DB {
   private static client: Pool;
@@ -1064,47 +1066,6 @@ class ModelDBv1 extends DB {
       }
     });
   }
-  async updateEmployeeData(employeeDataId: number, totalHoursSpent: number) {
-    return await this.retryQuery("updateEmployeeData", async () => {
-      let pClient;
-      try {
-        pClient = await this.connect();
-        await pClient.query("BEGIN");
-        const res = await pClient.query(
-          `
-         UPDATE "employee_data 
-         SET "total_hours_spent" = $2::numeric
-         WHERE 
-          "id" = $1::int
-         RETURNING id;`,
-          [employeeDataId, totalHoursSpent]
-        );
-        if (res.rowCount !== 1) {
-          await pClient.query("ROLLBACK");
-          return -1;
-        }
-        const modelData = {
-          employeeDataId: res.rows[0].id as number,
-        };
-        await pClient.query("COMMIT");
-        return modelData;
-      } catch (error: any) {
-        console.log(
-          chalk.red("PostgresSQL Error: "),
-          error?.message,
-          error?.code
-        );
-        if (pClient) {
-          await pClient.query("ROLLBACK");
-        }
-        return null;
-      } finally {
-        if (pClient) {
-          this.release(pClient);
-        }
-      }
-    });
-  }
   async getRoomIdByDate(date: string) {
     return await this.retryQuery("getRoomIdByDate", async () => {
       let pClient;
@@ -1303,7 +1264,12 @@ class ModelDBv1 extends DB {
       }
     });
   }
-  async updateUserData(employeeIds: number[], roomId: number, date: string) {
+  async updateUserData(
+    employeeIds: number[],
+    roomId: number,
+    date: string,
+    increValue: number = INTERVAL_SEC
+  ) {
     return await this.retryQuery("updateUserData", async () => {
       let pClient;
       try {
@@ -1313,7 +1279,7 @@ class ModelDBv1 extends DB {
           format(
             `
           UPDATE "employee_data"
-          SET "total_hours_spent" = "total_hours_spent" + 10
+          SET "total_time_spent" = "total_time_spent" + $3::int
           WHERE
           "room_id" = $1::int AND
           "date" = $2::date AND
@@ -1321,7 +1287,7 @@ class ModelDBv1 extends DB {
           `,
             employeeIds
           ),
-          [roomId, date]
+          [roomId, date, increValue]
         );
         if (resCheck.rowCount === 0) {
           await pClient.query("ROLLBACK");

@@ -8,7 +8,7 @@ type EmployeeData = {
   userName: string;
   roomId: number;
   date: string;
-  totalHoursSpent: number;
+  totalTimeSpent: number;
 };
 
 const roomSchema = z.object({

@@ -145,7 +145,7 @@ def video_feed():
     )
 
 
-def update_json(roomId):
+def update_json(roomId, cameraId, interval_sec):
     """Background task to write face detection data to JSON every 5 seconds."""
     while True:
         face_data = {
@@ -153,12 +153,11 @@ def update_json(roomId):
             "timestamp": time.time(),
             "headCount": len(latest_face_locations),
             "empIds": latest_face_names,
-            "roomId": roomId
+            "roomId": roomId,
+            "cameraId": cameraId,
         }
-        # with open("output.json", "w") as f:
-        #     json.dump(face_data, f)
         print(json.dumps(face_data), flush=True)
-        time.sleep(10)  # Async non-blocking delay
+        time.sleep(interval_sec)
 
 
 def main():
@@ -173,6 +172,8 @@ def main():
     sfr.load_encoding_images(c)
     stream_url = sys.argv[2]
     room_id = sys.argv[3]
+    camera_id = sys.argv[4]
+    interval_sec = int(sys.argv[5])
     try:
         video_stream = ThreadedVideoStream(stream_url).start()
     except Exception as e:
@@ -185,7 +186,9 @@ def main():
         target=detection_worker, args=(sfr, video_stream, 0.5), daemon=True
     )
     detection_thread.start()
-    json_thread = threading.Thread(target=update_json, args=(room_id), daemon=True)
+    json_thread = threading.Thread(
+        target=update_json, args=(room_id, camera_id, interval_sec), daemon=True
+    )
     json_thread.start()
 
     app.config["sfr"] = sfr

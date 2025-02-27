@@ -3,10 +3,9 @@ import express from "express";
 import { ClerkCache } from "../cache/redis";
 import fileUpload, { UploadedFile } from "express-fileupload";
 import { ModelDBv1, SessionDB, TrackerDBv1, UserDBv1 } from "../db/db";
-import { serverConfigs } from "../configs/configs";
+import { pythonConfigs, serverConfigs } from "../configs/configs";
 import { v4 } from "uuid";
 import { Cookies, SessionId } from "../types/auth";
-import { faker } from "@faker-js/faker";
 import fs from "fs";
 import {
   adminProfileSchema,
@@ -15,8 +14,10 @@ import {
 } from "../types/user";
 import { cameraSchema, modelSchema, roomSchema } from "../types/model";
 import path from "path";
-import { spawn } from "child_process";
+import { ChildProcessWithoutNullStreams, spawn } from "child_process";
 import { CameraJob } from "../types/db";
+import { JsonOutputJob, ModelFeed } from "../types/python";
+import { getDummyJsonOutput, stopJob } from "../helpers/jobs";
 const userRouter = express.Router();
 const v1Routes = express.Router();
 const adminRoutes = express.Router();
@@ -24,6 +25,7 @@ const trackRouter = express.Router();
 
 // Macros
 const { SESSION_EXPIRE_TIME_IN_DAYS } = serverConfigs;
+const { INTERVAL_SEC } = pythonConfigs;
 
 v1Routes.post("/login/employee", async (req, res) => {
   try {
@@ -113,9 +115,7 @@ v1Routes.post("/login/employee", async (req, res) => {
     });
     console.log(chalk.yellow(`User: ${clerkId}, is logged in!`));
   } catch (error: any) {
-    console.log(
-      chalk.red(`Error: ${error?.message}, for user id ${req.body?.userId}`)
-    );
+    console.log(chalk.red(`Error: ${error?.message}.`));
     res.status(400).send({
       status: "fail",
       error: error,
@@ -233,9 +233,7 @@ v1Routes.post("/login/admin", async (req, res) => {
     });
     console.log(chalk.yellow(`User: ${userName}, is logged in!`));
   } catch (error: any) {
-    console.log(
-      chalk.red(`Error: ${error?.message}, for user id ${req.body?.userId}`)
-    );
+    console.log(chalk.red(`Error: ${error?.message}.`));
     res.status(400).send({
       status: "fail",
       error: error,
@@ -382,9 +380,7 @@ v1Routes.post(
         },
       });
     } catch (error: any) {
-      console.log(
-        chalk.red(`Error: ${error?.message}, for user id ${req.body?.userId}`)
-      );
+      console.log(chalk.red(`Error: ${error?.message}.`));
       res.status(400).send({
         status: "fail",
         error: error,
@@ -427,9 +423,7 @@ v1Routes.post("/create/admin", async (req, res) => {
       },
     });
   } catch (error: any) {
-    console.log(
-      chalk.red(`Error: ${error?.message}, for user id ${req.body?.userId}`)
-    );
+    console.log(chalk.red(`Error: ${error?.message}.`));
     res.status(400).send({
       status: "fail",
       error: error,
@@ -495,9 +489,7 @@ adminRoutes.post("/create/room", async (req, res) => {
       },
     });
   } catch (error: any) {
-    console.log(
-      chalk.red(`Error: ${error?.message}, for user id ${req.body?.userId}`)
-    );
+    console.log(chalk.red(`Error: ${error?.message}.`));
     res.status(400).send({
       status: "fail",
       error: error,
@@ -562,9 +554,7 @@ adminRoutes.get("/get/rooms", async (req, res) => {
       },
     });
   } catch (error: any) {
-    console.log(
-      chalk.red(`Error: ${error?.message}, for user id ${req.body?.userId}`)
-    );
+    console.log(chalk.red(`Error: ${error?.message}.`));
     res.status(400).send({
       status: "fail",
       error: error,
@@ -635,9 +625,7 @@ adminRoutes.post("/create/camera", async (req, res) => {
       },
     });
   } catch (error: any) {
-    console.log(
-      chalk.red(`Error: ${error?.message}, for user id ${req.body?.userId}`)
-    );
+    console.log(chalk.red(`Error: ${error?.message}.`));
     res.status(400).send({
       status: "fail",
       error: error,
@@ -702,9 +690,7 @@ adminRoutes.get("/get/cameras", async (req, res) => {
       },
     });
   } catch (error: any) {
-    console.log(
-      chalk.red(`Error: ${error?.message}, for user id ${req.body?.userId}`)
-    );
+    console.log(chalk.red(`Error: ${error?.message}.`));
     res.status(400).send({
       status: "fail",
       error: error,
@@ -773,9 +759,7 @@ adminRoutes.post("/create/model", async (req, res) => {
       },
     });
   } catch (error: any) {
-    console.log(
-      chalk.red(`Error: ${error?.message}, for user id ${req.body?.userId}`)
-    );
+    console.log(chalk.red(`Error: ${error?.message}.`));
     res.status(400).send({
       status: "fail",
       error: error,
@@ -840,9 +824,7 @@ adminRoutes.get("/get/models", async (req, res) => {
       },
     });
   } catch (error: any) {
-    console.log(
-      chalk.red(`Error: ${error?.message}, for user id ${req.body?.userId}`)
-    );
+    console.log(chalk.red(`Error: ${error?.message}.`));
     res.status(400).send({
       status: "fail",
       error: error,
@@ -920,9 +902,7 @@ adminRoutes.get("/get/employees", async (req, res) => {
       },
     });
   } catch (error: any) {
-    console.log(
-      chalk.red(`Error: ${error?.message}, for user id ${req.body?.userId}`)
-    );
+    console.log(chalk.red(`Error: ${error?.message}.`));
     res.status(400).send({
       status: "fail",
       error: error,
@@ -976,9 +956,7 @@ v1Routes.get("/onboarding", async (req, res) => {
       },
     });
   } catch (error: any) {
-    console.log(
-      chalk.red(`Error: ${error?.message}, for user id ${req.body?.userId}`)
-    );
+    console.log(chalk.red(`Error: ${error?.message}.`));
     res.status(400).send({
       status: "fail",
       error: error,
@@ -1017,33 +995,19 @@ trackRouter.get("/live/:port", async (req, res) => {
   }
 });
 
-type ModelFeed = {
-  [empId: string]: {
-    empName: string;
-    empUserName: string;
-    empId: string;
-    images: string[];
+// Jobs
+const jobProcesses: ChildProcessWithoutNullStreams[] = [];
+const roomCamera: {
+  [roomId: string]: {
+    [cameraId: string]: JsonOutputJob;
   };
-};
-
-type JsonOutputJob = {
-  faceDetected: boolean;
-  timestamp: number;
-  headCount: number;
-  empIds: string[];
-  roomId: string;
-};
-
-const jobs: {
-  [jobName: string]: CameraJob[];
 } = {};
 
-const empData: any = {};
+let jobInterval: ReturnType<typeof setInterval>;
 
 trackRouter.post("/start", async (req, res) => {
   try {
-    const jobName = faker.company.buzzNoun();
-    console.log(jobName);
+    console.log(chalk.yellow("Job starting!"));
     const modelDb = new ModelDBv1();
     const resCam = await modelDb.getCamerasForJob();
     // console.log(resCam);
@@ -1065,6 +1029,11 @@ trackRouter.post("/start", async (req, res) => {
       });
       return;
     }
+    const jobs: CameraJob[] = JSON.parse(
+      fs.readFileSync(path.join(process.cwd(), `/metadata/jobs.json`), {
+        encoding: "utf8",
+      })
+    );
     if (Object.keys(jobs).length !== 0) {
       res.status(200).send({
         status: "success",
@@ -1075,6 +1044,9 @@ trackRouter.post("/start", async (req, res) => {
       return;
     }
     for (const camera of resCam) {
+      if (camera.port <= 0) {
+        continue;
+      }
       const tdyDate = new Date().toLocaleDateString("en-CA");
       const jobModelData: ModelFeed = {};
       for (const emp of camera.emps) {
@@ -1108,7 +1080,12 @@ trackRouter.post("/start", async (req, res) => {
         { encoding: "utf8" }
       );
       const commandList = ["docker", "run"];
-      commandList.push("-p", `${camera.port}:5222`);
+      commandList.push(
+        "-p",
+        `${camera.port}:5222`,
+        "--name",
+        `camera_${camera.cameraId}`
+      );
       commandList.push(
         "-v",
         `${path.join(process.cwd(), "/public/images")}:/app/images`
@@ -1128,39 +1105,92 @@ trackRouter.post("/start", async (req, res) => {
       commandList.push(
         `/app/model_data/${camera.roomId}-${camera.cameraId}.json`,
         `${camera.videoLink}`,
-        `${camera.roomId}`
+        `${camera.roomId}`,
+        `${camera.cameraId}`,
+        `${INTERVAL_SEC}`
       );
-      console.log(commandList[0], commandList.slice(1));
+      // console.log(commandList[0], commandList.slice(1));
+      console.log(
+        chalk.yellowBright(
+          `Running docker container for camera: ${camera.cameraName}, cameraId: ${camera.cameraId}...`
+        )
+      );
       const modelJob = spawn(commandList[0], commandList.slice(1));
-      // Todo:
-      // Instead of this edit the json file
-      // from python and read form nodejs
       modelJob.stdout.on("data", async (data) => {
         const data1 = data.toString() as string;
-        console.log(data1)
         try {
           const jsonData: JsonOutputJob = JSON.parse(data1);
-          if (jsonData.faceDetected === true) {
-            const tdyDate = new Date().toLocaleDateString("en-CA");
-            const empIds = jsonData.empIds.map((ele) => parseInt(ele));
-            const resUpdate = await modelDb.updateUserData(
-              empIds,
-              parseInt(jsonData.roomId),
-              tdyDate
-            );
-            if (resUpdate === -1 || resUpdate === null) {
-              console.log(chalk.red(`Failed to update user date: `), empIds);
-            }
-          }
+          const cameras = roomCamera[jsonData.roomId];
+          cameras[jsonData.cameraId] = jsonData;
         } catch (error) {}
       });
+      jobProcesses.push(modelJob);
+      const roomId = camera.roomId?.toString() || "";
+      if (roomId in roomCamera) {
+        const cameras = roomCamera[roomId];
+        cameras[camera.cameraId.toString()] = getDummyJsonOutput();
+      } else {
+        roomCamera[roomId] = {
+          [camera.cameraId.toString()]: getDummyJsonOutput(),
+        };
+      }
     }
-    jobs[jobName] = resCam;
+    if (jobInterval) {
+      clearInterval(jobInterval);
+    }
+    jobInterval = setInterval(async () => {
+      try {
+        // console.log(roomCamera);
+        for (const roomId in roomCamera) {
+          const room = roomCamera[roomId];
+          const empIdsSet = new Set<number>();
+          for (const cameraId in room) {
+            const jsonData = room[cameraId];
+            if (jsonData.faceDetected === true) {
+              const empIds = jsonData.empIds.map((ele) => parseInt(ele));
+              for (const empId of empIds) {
+                empIdsSet.add(empId);
+              }
+            }
+          }
+          const empIds = [...empIdsSet];
+          if (empIds.length === 0) {
+            continue;
+          }
+          const tdyDate = new Date().toLocaleDateString("en-CA");
+          // console.log(empIds, parseInt(roomId));
+          const resUpdate = await modelDb.updateUserData(
+            empIds,
+            Number.isNaN(parseInt(roomId)) ? -1 : parseInt(roomId),
+            tdyDate,
+            INTERVAL_SEC
+          );
+          if (resUpdate === -1 || resUpdate === null) {
+            console.log(
+              chalk.red(`Failed to update for users with id:`),
+              empIds,
+              "room details:",
+              room
+            );
+          } else {
+            // console.log(
+            //   chalk.yellow(
+            //     `Update done on room id: ${roomId} for users with id: `
+            //   ),
+            //   empIds
+            // );
+          }
+        }
+      } catch (error: any) {
+        console.log(chalk.red(`Error: ${error?.message}.`));
+      }
+    }, INTERVAL_SEC * 1000);
     fs.writeFileSync(
       path.join(process.cwd(), `/metadata/jobs.json`),
-      JSON.stringify(jobs, null, 2),
+      JSON.stringify(resCam, null, 2),
       { encoding: "utf8" }
     );
+    console.log(chalk.yellow("Job started!"));
     res.status(200).send({
       status: "success",
       data: {
@@ -1168,9 +1198,7 @@ trackRouter.post("/start", async (req, res) => {
       },
     });
   } catch (error: any) {
-    console.log(
-      chalk.red(`Error: ${error?.message}, for user id ${req.body?.userId}`)
-    );
+    console.log(chalk.red(`Error: ${error?.message}.`));
     res.status(400).send({
       status: "fail",
       error: error,
@@ -1183,23 +1211,19 @@ trackRouter.post("/start", async (req, res) => {
 
 trackRouter.get("/get", async (req, res) => {
   try {
-    // const jobs: {
-    //   [jobName: string]: CameraJob;
-    // } = JSON.parse(
-    //   fs.readFileSync(path.join(process.cwd(), `/metadata/jobs.json`), {
-    //     encoding: "utf8",
-    //   })
-    // );
+    const jobs: CameraJob[] = JSON.parse(
+      fs.readFileSync(path.join(process.cwd(), `/metadata/jobs.json`), {
+        encoding: "utf8",
+      })
+    );
     res.status(200).send({
       status: "success",
       data: {
-        cameras: jobs[Object.keys(jobs)[0]],
+        cameras: jobs,
       },
     });
   } catch (error: any) {
-    console.log(
-      chalk.red(`Error: ${error?.message}, for user id ${req.body?.userId}`)
-    );
+    console.log(chalk.red(`Error: ${error?.message}.`));
     res.status(400).send({
       status: "fail",
       error: error,
@@ -1212,10 +1236,54 @@ trackRouter.get("/get", async (req, res) => {
 
 trackRouter.post("/stop", async (req, res) => {
   try {
+    const jobCleaned = stopJob();
+    if (jobCleaned === null) {
+      res.status(400).send({
+        status: "fail",
+        data: {
+          message: "Could not clear the jobs.",
+        },
+      });
+      return;
+    }
+    for (const jobProcess of jobProcesses) {
+      jobProcess.kill();
+      console.log(chalk.yellow(`Clearing child process: ${jobProcess.pid}`));
+    }
+    if (jobInterval) {
+      clearInterval(jobInterval);
+      console.log(
+        chalk.yellow(`Clearing job interval function: ${jobInterval}`)
+      );
+    }
+    res.status(200).send({
+      status: "success",
+      data: {
+        jobCleaned: jobCleaned,
+      },
+    });
   } catch (error: any) {
-    console.log(
-      chalk.red(`Error: ${error?.message}, for user id ${req.body?.userId}`)
-    );
+    console.log(chalk.red(`Error: ${error?.message}`));
+    res.status(400).send({
+      status: "fail",
+      error: error,
+      data: {
+        message: "Internal Server Error!",
+      },
+    });
+  }
+});
+
+trackRouter.post("/fake/data", async (req, res) => {
+  try {
+    res.status(200).send({
+      status: "success",
+      data: {
+        hi: true,
+      },
+    });
+  } catch (error: any) {
+    console.log(chalk.red(`Error: ${error?.message}`));
     res.status(400).send({
       status: "fail",
       error: error,

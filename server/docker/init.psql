@@ -94,7 +94,7 @@ CREATE TABLE
     "room_id" int NOT NULL,
     "date" DATE NOT NULL DEFAULT CURRENT_DATE,
     "created_at" timestamptz DEFAULT (CURRENT_TIMESTAMP),
-    "total_hours_spent" numeric DEFAULT (0),
+    "total_time_spent" numeric DEFAULT (0),
     UNIQUE ("room_id", "employee_id", "date")
   );
 
