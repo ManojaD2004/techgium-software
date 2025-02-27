@@ -1573,7 +1573,8 @@ class StatisticsDBv1 extends DB {
           `
           SELECT 
           DISTINCT re."employee_id" as "empId",
-          e."first_name" || ' ' || e."last_name" as "name"
+          e."first_name" || ' ' || e."last_name" as "name",
+          e."img_URL" as "avatar"
           FROM 
             "room_employee" as re
           INNER JOIN 
@@ -1607,9 +1608,11 @@ class StatisticsDBv1 extends DB {
             ).toFixed(2)
           );
           const prodObj = {
+            empId: empRoom["empId"],
             name: empRoom["name"],
             hours: totalHours,
             productivity: prodHour,
+            avatar: empRoom["avatar"]
           };
           productivityData.push(prodObj);
         }
@@ -1650,9 +1653,101 @@ class StatisticsDBv1 extends DB {
           departmentHoursData.push(prodObj);
         }
         const productivityData1 = [...productivityData];
-        const topPerformers = productivityData1
+        const topPerformers: any[] = productivityData1
           .sort((a, b) => b.productivity - a.productivity)
           .slice(0, 3);
+        for (const emp of topPerformers) {
+          const resHour = await pClient.query(
+            `
+            SELECT 
+              SUM("total_time_spent") as "total_time",
+              COUNT("id") as "total_rows"
+            FROM employee_data 
+            WHERE employee_id = $1::int AND
+            date >= (CURRENT_DATE - ($2::varchar || ' day')::INTERVAL)::date 
+            AND date < (CURRENT_DATE - ($3::varchar || ' day')::INTERVAL)::date ;
+          `,
+            [emp.empId, "7", "0"]
+          );
+          if (resHour.rowCount != 1) {
+            return -1;
+          }
+          const totalRows = parseInt(resHour.rows[0]["total_rows"]);
+          const totalTime = parseInt(resHour.rows[0]["total_time"]);
+          const totalHours = parseFloat((totalTime / (60 * 60)).toFixed(2));
+          const resHourPast = await pClient.query(
+            `
+            SELECT 
+              SUM("total_time_spent") as "total_time",
+              COUNT("id") as "total_rows"
+            FROM employee_data 
+            WHERE employee_id = $1::int AND
+            date >= (CURRENT_DATE - ($2::varchar || ' day')::INTERVAL)::date 
+            AND date < (CURRENT_DATE - ($3::varchar || ' day')::INTERVAL)::date ;
+          `,
+            [emp.empId, "14", "7"]
+          );
+          if (resHourPast.rowCount != 1) {
+            return -1;
+          }
+          const totalRowsPast = parseInt(resHourPast.rows[0]["total_rows"]);
+          const totalTimePast = parseInt(resHourPast.rows[0]["total_time"]);
+          const totalHoursPast = parseFloat(
+            (totalTimePast / (60 * 60)).toFixed(2)
+          );
+          emp.increase = parseFloat(
+            (((totalHours - totalHoursPast) / totalHoursPast) * 100).toFixed(2)
+          );
+        }
+        const skillMatrixData = [];
+        for (let i = 0; i < 7; i++) {
+          const resWeek = await pClient.query(
+            `
+            SELECT 
+              SUM("total_time_spent") as "total_time",
+              COUNT("id") as "total_rows"
+            FROM employee_data 
+            WHERE date = (CURRENT_DATE - ($1::varchar || ' day')::INTERVAL)::date
+            GROUP BY "employee_id"
+            ORDER BY "total_time";
+          `,
+            [`${i + 1}`]
+          );
+          if (resWeek.rowCount === 0) {
+            break;
+          }
+          const resDate = await pClient.query(
+            `
+            SELECT
+            (CURRENT_DATE - ($1::varchar || ' day')::INTERVAL)::date as "date";
+            `,
+            [`${i + 1}`]
+          );
+          if (resDate.rowCount != 1) {
+            return -1;
+          }
+          const date1: string = resDate.rows[0]["date"];
+          let A = 0;
+          let B = 0;
+          for (const row1 of resWeek.rows) {
+            const totalRows = parseInt(row1["total_rows"]);
+            const totalTime = parseInt(row1["total_time"]);
+            const totalHours = parseFloat(
+              (totalTime / (60 * 60 * totalRows)).toFixed(2)
+            );
+            A += totalHours;
+            B = totalHours;
+          }
+          const weekDay = new Date(date1).getDay();
+          A = parseFloat((A / resWeek.rows.length).toFixed(2));
+          const hourWeekObj = {
+            subject: daysOfWeek[weekDay],
+            A,
+            B,
+            fullMark: company.workHours,
+          };
+          skillMatrixData.push(hourWeekObj);
+        }
         return {
           employeeData: empRoomData,
           weeklyTrendData: weekData,
@@ -1660,6 +1755,7 @@ class StatisticsDBv1 extends DB {
           productivityData,
           departmentHoursData,
           topPerformers,
+          skillMatrixData,
         };
       } catch (error: any) {
         console.log(
