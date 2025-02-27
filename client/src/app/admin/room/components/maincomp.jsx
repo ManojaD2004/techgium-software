@@ -417,7 +417,7 @@ const RoomManagement = () => {
                       {cameras.map((camera) => (
                         <div
                           key={camera.cameraId}
-                          className={`flex items-center px-2 rounded-xl border-2 h-[50%] transition-all cursor-pointer text-sm ${
+                          className={`flex items-center px-2 rounded-xl border-2 h-[50%] transition-all cursor-pointer text-sm py-4 ${
                             formData.selectedCameras.includes(camera.cameraId)
                               ? "border-blue-500 bg-blue-50"
                               : "border-slate-200 hover:border-blue-200"
@@ -430,7 +430,7 @@ const RoomManagement = () => {
                             )}
                             className="h-3 w-3 rounded-lg border-2 data-[state=checked]:border-blue-600 data-[state=checked]:bg-blue-600"
                           />
-                          <span className="ml-3 font-medium text-sm text-slate-700">
+                          <span className="ml-3  font-medium text-sm text-slate-700">
                             {camera.cameraName}
                           </span>
                         </div>

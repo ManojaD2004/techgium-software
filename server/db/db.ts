@@ -1339,7 +1339,7 @@ class MiscDB extends DB {
         const past = 31;
         for (const empRoom of empRooms) {
           for (let i = 1; i <= past; i++) {
-            const totalHoursInOneDay = randNum(1, 4);
+            const totalHoursInOneDay = randNum(1, 3);
             const timeInSeconds = Math.round(totalHoursInOneDay * 60 * 60);
             const resData = await pClient.query(
               `
