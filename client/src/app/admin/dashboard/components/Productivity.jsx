@@ -1,5 +1,5 @@
 "use client";
-import React, { useState, useMemo,useEffect } from "react";
+import React, { useState, useMemo, useEffect } from "react";
 import {
   Card,
   CardContent,
@@ -57,9 +57,10 @@ import {
   Calendar as CalendarIcon,
 } from "lucide-react";
 import { BeatLoader } from "react-spinners";
+import API_LINK from "@/app/backendLink/link";
+import toast from "react-hot-toast";
 
 // Skill matrix data remains the same
-
 
 const apiResponse = {
   status: "success",
@@ -562,19 +563,18 @@ const apiResponse = {
       },
     ],
     skillMatrixData: [
-        { subject: "Wed", A: 3.51, B: 4.53, fullMark: 8 },
-        { subject: "Tue", A: 3.01, B: 3.9, fullMark: 8 },
-        { subject: "Mon", A: 2.73, B: 3.34, fullMark: 8 },
-        { subject: "Sun", A: 2.75, B: 3.98, fullMark: 8 },
-        { subject: "Sat", A: 3.02, B: 4.09, fullMark: 8 },
-        { subject: "Fri", A: 2.75, B: 3.54, fullMark: 8 },
-        { subject: "Thu", A: 3.29, B: 3.84, fullMark: 8 }
-      ]
+      { subject: "Wed", A: 3.51, B: 4.53, fullMark: 8 },
+      { subject: "Tue", A: 3.01, B: 3.9, fullMark: 8 },
+      { subject: "Mon", A: 2.73, B: 3.34, fullMark: 8 },
+      { subject: "Sun", A: 2.75, B: 3.98, fullMark: 8 },
+      { subject: "Sat", A: 3.02, B: 4.09, fullMark: 8 },
+      { subject: "Fri", A: 2.75, B: 3.54, fullMark: 8 },
+      { subject: "Thu", A: 3.29, B: 3.84, fullMark: 8 },
+    ],
   },
 };
 
 // Data processing
-
 
 // Constants
 const COLORS = [
@@ -625,27 +625,38 @@ export default function EmployeeDashboard() {
     productivityData: [],
     departmentHoursData: [],
     topPerformers: [],
-    skillMatrixData:[],
+    skillMatrixData: [],
   });
 
   useEffect(() => {
     // Simulate API call with 2 second delay
+
     const fetchData = async () => {
-      setTimeout(() => {
-        setData({
-          employeeData: apiResponse.data.employeeData,
-          weeklyTrendData: apiResponse.data.weeklyTrendData,
-          hoursWorkedData: apiResponse.data.hoursWorkedData.sort((a, b) =>
-            ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'].indexOf(a.day) -
-            ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'].indexOf(b.day)
-          ),
-          productivityData: apiResponse.data.productivityData,
-          departmentHoursData: apiResponse.data.departmentHoursData,
-          topPerformers: apiResponse.data.topPerformers,
-          skillMatrixData:apiResponse.data.skillMatrixData
-        });
+      try {
+        setLoading(true);
+        const response = await fetch(
+          `${API_LINK}/user/v1/statistics/dashboard`,
+          {
+            method: "GET",
+            credentials: "include",
+            headers: {
+              "Content-Type": "application/json",
+              "ngrok-skip-browser-warning": "true",
+            },
+          }
+        );
+        const data = await response.json();
+        if (!response.ok) {
+          toast.error("Failed to fetch!!!");
+          setLoading(false);
+          return;
+        }
+        setData(data.data);
         setLoading(false);
-      }, 2000);
+      } catch (error) {
+        toast.error("Error fetching data!!!");
+        console.log(error);
+      }
     };
 
     fetchData();
@@ -653,40 +664,44 @@ export default function EmployeeDashboard() {
 
   // Calculate metrics
   const totalHours = useMemo(
-    () => data.employeeData.reduce((sum, emp) => sum + emp.hoursThisWeek, 0).toFixed(1),
+    () =>
+      data.employeeData
+        .reduce((sum, emp) => sum + emp.hoursThisWeek, 0)
+        .toFixed(1),
     [data.employeeData]
   );
 
   const avgProductivity = useMemo(
-    () => (
-      data.employeeData.reduce((sum, emp) => sum + emp.productivity, 0) /
-      data.employeeData.length
-    ).toFixed(1),
+    () =>
+      (
+        data.employeeData.reduce((sum, emp) => sum + emp.productivity, 0) /
+        data.employeeData.length
+      ).toFixed(1),
     [data.employeeData]
   );
 
   const activeEmployees = useMemo(
-    () => new Set(
-      data.employeeData
-        .filter(emp => emp.status === 'Active')
-        .map(emp => emp.empId)
-    ).size,
+    () =>
+      new Set(
+        data.employeeData
+          .filter((emp) => emp.status === "Active")
+          .map((emp) => emp.empId)
+      ).size,
     [data.employeeData]
   );
 
   const uniqueRooms = useMemo(
-    () => [...new Set(data.employeeData.map(employee => employee.room))],
+    () => [...new Set(data.employeeData.map((employee) => employee.room))],
     [data.employeeData]
   );
 
   if (loading) {
     return (
       <div className="flex justify-center items-center min-h-screen bg-gray-50 w-[1150px]">
-       <BeatLoader/>
+        <BeatLoader />
       </div>
     );
   }
-
 
   return (
     <div className="p-6 bg-gradient-to-br from-gray-50 to-blue-50 min-h-screen">
@@ -1044,7 +1059,7 @@ export default function EmployeeDashboard() {
                   </div>
                   <div className="flex items-center mt-2">
                     <span className="text-green-500 font-medium">
-                      {employee.increase}
+                      {employee.increase}%
                     </span>
                     <span className="text-gray-500 text-sm ml-1">
                       from last {timeRange}
