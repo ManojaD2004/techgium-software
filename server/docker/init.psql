@@ -109,9 +109,11 @@ CREATE TABLE
     "id" SERIAL PRIMARY KEY,
     "user_id" int NOT NULL,
     "message" TEXT NOT NULL,
-    "action" TEXT
+    "action" TEXT,
+    "type" varchar NOT NULL,
+    "created_at" timestamptz DEFAULT (CURRENT_TIMESTAMP)
   );
-
+  
 ALTER TABLE "notifications"
 ADD FOREIGN KEY ("user_id") REFERENCES "users" ("id") ON DELETE CASCADE;
 

@@ -23,3 +23,7 @@ pm2 reload server
 
 # Python
 docker build -t model-py -f dockerfile.python ./
+
+
+# Todo:
+# Take care of company work hours

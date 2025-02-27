@@ -25,6 +25,7 @@ import { ChildProcessWithoutNullStreams, spawn } from "child_process";
 import { CameraJob } from "../types/db";
 import { JsonOutputJob, ModelFeed } from "../types/python";
 import { getDummyJsonOutput, stopJob } from "../helpers/jobs";
+import { randInt } from "../helpers/random";
 const userRouter = express.Router();
 const v1Routes = express.Router();
 const adminRoutes = express.Router();
@@ -1012,11 +1013,36 @@ const roomCamera: {
 } = {};
 
 let jobInterval: ReturnType<typeof setInterval>;
+let mainJobModelData: ModelFeed = {};
+let mainRoomData: {
+  [roomId: string]: {
+    roomName: string;
+    roomId: string;
+    maxCap: number;
+  };
+} = {};
+let mainCameraData: {
+  [cameraId: string]: CameraJob;
+} = {};
+
+let lastVisited: { [roomId: string]: number[] } = {};
 
 trackRouter.post("/start", async (req, res) => {
   try {
+    const { userId }: Cookies = req.signedCookies;
+    if (!userId) {
+      res.status(400).send({
+        status: "fail",
+        data: {
+          message: "Didnt find cookies, please login in!",
+          redirectPage: "/sign-in",
+        },
+      });
+      return;
+    }
     console.log(chalk.yellow("Job starting!"));
     const modelDb = new ModelDBv1();
+    const statsDb = new StatisticsDBv1();
     const resCam = await modelDb.getCamerasForJob();
     // console.log(resCam);
     if (resCam === -1 || resCam === null) {
@@ -1079,6 +1105,16 @@ trackRouter.post("/start", async (req, res) => {
           return;
         }
       }
+      mainJobModelData = { ...mainJobModelData, ...jobModelData };
+      mainRoomData = {
+        ...mainRoomData,
+        [camera.roomId?.toString() || ""]: {
+          roomId: camera.roomId?.toString() || "",
+          roomName: camera.roomName,
+          maxCap: camera.maxHeadCount,
+        },
+      };
+      mainCameraData[camera.cameraId] = camera;
       fs.writeFileSync(
         path.join(
           process.cwd(),
@@ -1155,18 +1191,78 @@ trackRouter.post("/start", async (req, res) => {
           for (const cameraId in room) {
             const jsonData = room[cameraId];
             if (jsonData.faceDetected === true) {
-              const empIds = jsonData.empIds.map((ele) => parseInt(ele));
-              for (const empId of empIds) {
-                empIdsSet.add(empId);
+              for (const empId of jsonData.empIds) {
+                if (empId !== "Unknown" && !Number.isNaN(parseInt(empId))) {
+                  empIdsSet.add(parseInt(empId));
+                } else {
+                  statsDb.addNoti(
+                    parseInt(userId),
+                    `Unknow person has entered the room ${mainRoomData[roomId].roomName} of roomId ${roomId},
+                  detected from camera ${mainCameraData[cameraId].cameraName} of cameraId ${cameraId}`.replace(
+                      /\s+/g,
+                      " "
+                    ),
+                    "alert"
+                  );
+                }
               }
             }
           }
           const empIds = [...empIdsSet];
+          if (empIds.length > mainRoomData[roomId].maxCap) {
+            statsDb.addNoti(
+              parseInt(userId),
+              `Maximum capacity exceeded for room ${mainRoomData[roomId].roomName} of roomId ${roomId}`.replace(
+                /\s+/g,
+                " "
+              ),
+              "warning"
+            );
+          } else if (empIds.length / mainRoomData[roomId].maxCap >= 0.5) {
+            statsDb.addNoti(
+              parseInt(userId),
+              `Room occupancy at ${parseFloat(
+                ((empIds.length / mainRoomData[roomId].maxCap) * 100).toFixed(2)
+              )}% for room ${
+                mainRoomData[roomId].roomName
+              } of roomId ${roomId}`.replace(/\s+/g, " "),
+              "info"
+            );
+          }
+          if (roomId in lastVisited) {
+            const pastEmpIds = lastVisited[roomId];
+            for (const empId of empIds) {
+              if (pastEmpIds.includes(empId) === false) {
+                statsDb.addNoti(
+                  parseInt(userId),
+                  `${
+                    mainJobModelData[empId.toString()].empName
+                  } has entered the room ${
+                    mainRoomData[roomId].roomName
+                  } of roomId ${roomId}`.replace(/\s+/g, " "),
+                  "info"
+                );
+              }
+            }
+            for (const empId of pastEmpIds) {
+              if (empIds.includes(empId) === false) {
+                statsDb.addNoti(
+                  parseInt(userId),
+                  `${
+                    mainJobModelData[empId.toString()].empName
+                  } has leaved the room ${
+                    mainRoomData[roomId].roomName
+                  } of roomId ${roomId}`.replace(/\s+/g, " "),
+                  "info"
+                );
+              }
+            }
+          }
+          lastVisited[roomId] = empIds;
+          const tdyDate = new Date().toLocaleDateString("en-CA");
           if (empIds.length === 0) {
             continue;
           }
-          const tdyDate = new Date().toLocaleDateString("en-CA");
-          // console.log(empIds, parseInt(roomId));
           const resUpdate = await modelDb.updateUserData(
             empIds,
             Number.isNaN(parseInt(roomId)) ? -1 : parseInt(roomId),
@@ -1181,12 +1277,12 @@ trackRouter.post("/start", async (req, res) => {
               room
             );
           } else {
-            // console.log(
-            //   chalk.yellow(
-            //     `Update done on room id: ${roomId} for users with id: `
-            //   ),
-            //   empIds
-            // );
+            console.log(
+              chalk.yellow(
+                `Update done on room id: ${roomId} for users with id: `
+              ),
+              empIds
+            );
           }
         }
       } catch (error: any) {
@@ -1282,6 +1378,66 @@ trackRouter.post("/stop", async (req, res) => {
   }
 });
 
+trackRouter.get("/noti", async (req, res) => {
+  try {
+    const { userId }: Cookies = req.signedCookies;
+    if (!userId) {
+      res.status(400).send({
+        status: "fail",
+        data: {
+          message: "Didnt find cookies, please login in!",
+          redirectPage: "/sign-in",
+        },
+      });
+      return;
+    }
+    const statsDb = new StatisticsDBv1();
+    const roomData = [];
+    for (const roomId in roomCamera) {
+      const room = roomCamera[roomId];
+      const empIdsSet = new Set<number>();
+      for (const cameraId in room) {
+        const jsonData = room[cameraId];
+        if (jsonData.faceDetected === true) {
+          for (const empId of jsonData.empIds) {
+            empIdsSet.add(
+              Number.isNaN(parseInt(empId))
+                ? randInt(10000, 50000)
+                : parseInt(empId)
+            );
+          }
+        }
+      }
+      const empIds = [...empIdsSet];
+      roomData.push({
+        id: parseInt(roomId),
+        name: mainRoomData[roomId].roomName,
+        maxCapacity: mainRoomData[roomId].maxCap,
+        currentOccupancy: empIds.length,
+        status:
+          empIds.length > mainRoomData[roomId].maxCap ? "exceeded" : "normal",
+      });
+    }
+    const noti = await statsDb.getNoti(parseInt(userId));
+    res.status(200).send({
+      status: "success",
+      data: {
+        room: roomData,
+        noti,
+      },
+    });
+  } catch (error: any) {
+    console.log(chalk.red(`Error: ${error?.message}`));
+    res.status(400).send({
+      status: "fail",
+      error: error,
+      data: {
+        message: "Internal Server Error!",
+      },
+    });
+  }
+});
+
 statisticsRouter.post("/dummy/data", async (req, res) => {
   try {
     const misc = new MiscDB();
@@ -1318,6 +1474,38 @@ statisticsRouter.get("/dashboard", async (req, res) => {
   try {
     const statisticsDb = new StatisticsDBv1();
     const resDb = await statisticsDb.getDashboard();
+    if (resDb === -1 || resDb === null) {
+      res.status(400).send({
+        status: "fail",
+        data: {
+          message: "Could not insert data, or the database is offline",
+          resDb: resDb,
+        },
+      });
+      return;
+    }
+    res.status(200).send({
+      status: "success",
+      data: resDb,
+    });
+  } catch (error: any) {
+    console.log(chalk.red(`Error: ${error?.message}`));
+    res.status(400).send({
+      status: "fail",
+      error: error,
+      data: {
+        message: "Internal Server Error!",
+      },
+    });
+  }
+});
+
+statisticsRouter.get("/dashboard/:empid", async (req, res) => {
+  try {
+    const statisticsDb = new StatisticsDBv1();
+    const resDb = await statisticsDb.getDashboardByUserId(
+      parseInt(req.params.empid)
+    );
     if (resDb === -1 || resDb === null) {
       res.status(400).send({
         status: "fail",

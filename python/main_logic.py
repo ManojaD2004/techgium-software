@@ -22,7 +22,7 @@ last_face_locations = None
 last_face_names = None
 
 class VideoCaptureThread:
-    def __init__(self, src=0, width=640, height=480):
+    def __init__(self, src="http://192.168.1.7:4747/video", width=640, height=480):
         self.cap = cv2.VideoCapture(src)
         self.cap.set(3, width)
         self.cap.set(4, height)

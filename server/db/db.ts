@@ -1123,7 +1123,8 @@ class ModelDBv1 extends DB {
             r."id" = c."room_id"
           INNER JOIN "model" as m ON
             m."id" = r."model_id"
-          WHERE c."room_id" IS NOT NULL;
+          WHERE c."room_id" IS NOT NULL
+          AND c."tracker_port" > 0;
           `
         );
         if (res.rowCount === 0) {
@@ -1728,7 +1729,7 @@ class StatisticsDBv1 extends DB {
             const totalRows = parseInt(row1["total_rows"]);
             const totalTime = parseInt(row1["total_time"]);
             const totalHours = parseFloat(
-              (totalTime / (60 * 60 * totalRows)).toFixed(2)
+              (totalTime / (60 * 60)).toFixed(2)
             );
             A += totalHours;
             B = totalHours;
@@ -1758,6 +1759,418 @@ class StatisticsDBv1 extends DB {
           error?.message,
           error?.code
         );
+        return null;
+      } finally {
+        if (pClient) {
+          this.release(pClient);
+        }
+      }
+    });
+  }
+  async getDashboardByUserId(userId: number) {
+    return await this.retryQuery("getDashboardByUserId", async () => {
+      let pClient;
+      try {
+        pClient = await this.connect();
+        // Divide work hours by 2 as there are multiple rooms
+        const company = getCompanyMetadata();
+        if (company === null) {
+          return null;
+        }
+        const res = await pClient.query(
+          `
+          SELECT 
+            e."first_name" as "firstName",
+            e."last_name" as "lastName",
+            e."phone_no" as "phoneNo",
+            e."img_URL" as "avatar",
+            'Active' as "status"
+          FROM 
+            "users" as e
+          WHERE e."id" = $1::int 
+          AND e."type" = 'employee';`,
+          [userId]
+        );
+        if (res.rowCount !== 1) {
+          return -1;
+        }
+        const employeeInfo = res.rows[0];
+        const resBasic = await pClient.query(
+          `
+            SELECT 
+              SUM("total_time_spent") as "total_time",
+              COUNT("id") as "total_rows"
+            FROM employee_data 
+            WHERE employee_id = $1::int;`,
+          [userId]
+        );
+        if (resBasic.rowCount !== 1) {
+          return -1;
+        }
+        const resBasic1 = await pClient.query(
+          `
+            SELECT 
+              DISTINCT date
+            FROM employee_data
+            WHERE employee_id = $1::int;`,
+          [userId]
+        );
+        const totalDaysBasic = resBasic1.rowCount || 1;
+        const totalRowsBasic = parseInt(resBasic.rows[0]["total_rows"]);
+        const totalTimeBasic = parseInt(resBasic.rows[0]["total_time"]);
+        const totalHoursBasic = parseFloat(
+          (totalTimeBasic / (60 * 60)).toFixed(2)
+        );
+        // Take 16 hours as workHours as u messed up
+        // change this in future after data reset
+        const avgProdBasic = parseFloat(
+          (
+            (totalHoursBasic / (totalDaysBasic * company.workHours * 2)) *
+            100
+          ).toFixed(2)
+        );
+        const basicInfo = {
+          totalHours: totalHoursBasic,
+          averageProductivy: avgProdBasic,
+        };
+        const hoursWeek = [];
+        const daysOfWeek = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
+        for (let i = 0; i < 7; i++) {
+          const resWeek = await pClient.query(
+            `
+            SELECT 
+              SUM("total_time_spent") as "total_time",
+              COUNT("id") as "total_rows"
+            FROM employee_data 
+            WHERE date = (CURRENT_DATE - ($1::varchar || ' day')::INTERVAL)::date
+            AND employee_id = $2::int;
+          `,
+            [`${i + 1}`, userId]
+          );
+          if (resWeek.rowCount != 1) {
+            return -1;
+          }
+          const resDate = await pClient.query(
+            `
+            SELECT
+            (CURRENT_DATE - ($1::varchar || ' day')::INTERVAL)::date as "date";
+            `,
+            [`${i + 1}`]
+          );
+          if (resDate.rowCount != 1) {
+            return -1;
+          }
+          const date1: string = resDate.rows[0]["date"];
+          const totalTime = parseInt(resWeek.rows[0]["total_time"]);
+          const totalHours = parseFloat((totalTime / (60 * 60)).toFixed(2));
+          const resWeekPast = await pClient.query(
+            `
+            SELECT 
+              SUM("total_time_spent") as "total_time",
+              COUNT("id") as "total_rows"
+            FROM employee_data 
+            WHERE date = (CURRENT_DATE - ($1::varchar || ' day')::INTERVAL)::date
+            AND employee_id = $2::int;
+          `,
+            [`${i + 1 + 7}`, userId]
+          );
+          if (resWeekPast.rowCount != 1) {
+            return -1;
+          }
+          const totalTimePast = parseInt(resWeekPast.rows[0]["total_time"]);
+          const totalHoursPast = parseFloat(
+            (totalTimePast / (60 * 60)).toFixed(2)
+          );
+          const weekDay = new Date(date1).getDay();
+          const hourWeekObj = {
+            day: daysOfWeek[weekDay],
+            "This Week": totalHours,
+            "Last Week": totalHoursPast,
+          };
+          hoursWeek.push(hourWeekObj);
+        }
+        hoursWeek.reverse();
+        const res1 = await pClient.query(
+          `
+          SELECT 
+          DISTINCT re."employee_id" as "empId",
+          e."first_name" || ' ' || e."last_name" as "name",
+          e."img_URL" as "avatar"
+          FROM 
+            "room_employee" as re
+          INNER JOIN 
+            "users" as e ON
+          re."employee_id" = e."id" AND
+          e."type" = 'employee'`
+        );
+        const empRoomData1 = res1.rows;
+        const productivityData = [];
+        for (const empRoom of empRoomData1) {
+          const resHour = await pClient.query(
+            `
+            SELECT 
+              SUM("total_time_spent") as "total_time",
+              COUNT("id") as "total_rows"
+            FROM employee_data 
+            WHERE employee_id = $1::int;
+          `,
+            [empRoom["empId"]]
+          );
+          if (resHour.rowCount != 1) {
+            return -1;
+          }
+          const totalRows = parseInt(resHour.rows[0]["total_rows"]);
+          const totalTime = parseInt(resHour.rows[0]["total_time"]);
+          const totalHours = parseFloat((totalTime / (60 * 60)).toFixed(2));
+          const prodHour = parseFloat(
+            ((totalHours / (company.workHours * totalRows)) * 100).toFixed(2)
+          );
+          const prodObj = {
+            empId: empRoom["empId"],
+            name: empRoom["name"],
+            hours: totalHours,
+            productivity: prodHour,
+            avatar: empRoom["avatar"],
+          };
+          productivityData.push(prodObj);
+        }
+        const res2 = await pClient.query(
+          `
+          SELECT 
+            DISTINCT re."room_id" as "roomId",
+            r."room_name" as "name"
+          FROM 
+            "room_employee" as re
+          INNER JOIN 
+            "rooms" as r ON
+          re."room_id" = r."id"
+          WHERE re."employee_id" = $1::int;`,
+          [userId]
+        );
+        const empRoomData2 = res2.rows;
+        const departmentHoursData = [];
+        for (const empRoom of empRoomData2) {
+          const resHour = await pClient.query(
+            `
+            SELECT 
+              SUM("total_time_spent") as "total_time",
+              COUNT("id") as "total_rows"
+            FROM employee_data 
+            WHERE room_id = $1::int;
+          `,
+            [empRoom["roomId"]]
+          );
+          if (resHour.rowCount != 1) {
+            return -1;
+          }
+          const totalRows = parseInt(resHour.rows[0]["total_rows"]);
+          const totalTime = parseInt(resHour.rows[0]["total_time"]);
+          const totalHours = parseFloat((totalTime / (60 * 60)).toFixed(2));
+          const prodObj = {
+            name: empRoom["name"],
+            hours: totalHours,
+          };
+          departmentHoursData.push(prodObj);
+        }
+        const productivityData1 = [...productivityData];
+        const topPerformers: any[] = productivityData1
+          .sort((a, b) => b.productivity - a.productivity)
+          .slice(0, 3);
+        for (const emp of topPerformers) {
+          const resHour = await pClient.query(
+            `
+            SELECT 
+              SUM("total_time_spent") as "total_time",
+              COUNT("id") as "total_rows"
+            FROM employee_data 
+            WHERE employee_id = $1::int AND
+            date >= (CURRENT_DATE - ($2::varchar || ' day')::INTERVAL)::date 
+            AND date < (CURRENT_DATE - ($3::varchar || ' day')::INTERVAL)::date ;
+          `,
+            [emp.empId, "7", "0"]
+          );
+          if (resHour.rowCount != 1) {
+            return -1;
+          }
+          const totalRows = parseInt(resHour.rows[0]["total_rows"]);
+          const totalTime = parseInt(resHour.rows[0]["total_time"]);
+          const totalHours = parseFloat((totalTime / (60 * 60)).toFixed(2));
+          const resHourPast = await pClient.query(
+            `
+            SELECT 
+              SUM("total_time_spent") as "total_time",
+              COUNT("id") as "total_rows"
+            FROM employee_data 
+            WHERE employee_id = $1::int AND
+            date >= (CURRENT_DATE - ($2::varchar || ' day')::INTERVAL)::date 
+            AND date < (CURRENT_DATE - ($3::varchar || ' day')::INTERVAL)::date ;
+          `,
+            [emp.empId, "14", "7"]
+          );
+          if (resHourPast.rowCount != 1) {
+            return -1;
+          }
+          const totalRowsPast = parseInt(resHourPast.rows[0]["total_rows"]);
+          const totalTimePast = parseInt(resHourPast.rows[0]["total_time"]);
+          const totalHoursPast = parseFloat(
+            (totalTimePast / (60 * 60)).toFixed(2)
+          );
+          emp.increase = parseFloat(
+            (((totalHours - totalHoursPast) / totalHoursPast) * 100).toFixed(2)
+          );
+        }
+        const skillMatrixData = [];
+        for (let i = 0; i < 7; i++) {
+          const resWeek = await pClient.query(
+            `
+            SELECT 
+              SUM("total_time_spent") as "total_time",
+              COUNT("id") as "total_rows"
+            FROM employee_data 
+            WHERE date = (CURRENT_DATE - ($1::varchar || ' day')::INTERVAL)::date
+            GROUP BY "employee_id"
+            ORDER BY "total_time";
+          `,
+            [`${i + 1}`]
+          );
+          if (resWeek.rowCount === 0) {
+            break;
+          }
+          const resDate = await pClient.query(
+            `
+            SELECT
+            (CURRENT_DATE - ($1::varchar || ' day')::INTERVAL)::date as "date";
+            `,
+            [`${i + 1}`]
+          );
+          if (resDate.rowCount != 1) {
+            return -1;
+          }
+          const date1: string = resDate.rows[0]["date"];
+          let A = 0;
+          let B = 0;
+          for (const row1 of resWeek.rows) {
+            const totalRows = parseInt(row1["total_rows"]);
+            const totalTime = parseInt(row1["total_time"]);
+            const totalHours = parseFloat(
+              (totalTime / (60 * 60)).toFixed(2)
+            );
+            A += totalHours;
+          }
+          const weekDay = new Date(date1).getDay();
+          A = parseFloat((A / resWeek.rows.length).toFixed(2));
+          const resWeek1 = await pClient.query(
+            `
+            SELECT 
+              SUM("total_time_spent") as "total_time",
+              COUNT("id") as "total_rows"
+            FROM employee_data 
+            WHERE date = (CURRENT_DATE - ($1::varchar || ' day')::INTERVAL)::date
+            AND employee_id = $2::int;
+          `,
+            [`${i + 1}`, userId]
+          );
+          if (resWeek1.rowCount !== 1) {
+            break;
+          }
+          const totalRows = parseInt(resWeek1.rows[0]["total_rows"]);
+          const totalTime = parseInt(resWeek1.rows[0]["total_time"]);
+          const totalHours = parseFloat(
+            (totalTime / (60 * 60)).toFixed(2)
+          );
+          B = totalHours;
+          const hourWeekObj = {
+            subject: daysOfWeek[weekDay],
+            A,
+            B,
+            fullMark: company.workHours,
+          };
+          skillMatrixData.push(hourWeekObj);
+        }
+        return {
+          employeeInfo,
+          hoursWorkedData: hoursWeek,
+          departmentHoursData,
+          topPerformers,
+          skillMatrixData,
+          basicInfo,
+        };
+      } catch (error: any) {
+        console.log(
+          chalk.red("PostgresSQL Error: "),
+          error?.message,
+          error?.code
+        );
+        return null;
+      } finally {
+        if (pClient) {
+          this.release(pClient);
+        }
+      }
+    });
+  }
+  async getNoti(userId: number) {
+    return await this.retryQuery("getNoti", async () => {
+      let pClient;
+      try {
+        pClient = await this.connect();
+        const res = await pClient.query(
+          `
+         SELECT 
+          "id",
+          "message",
+          "created_at" as "timestamp",
+          "type"
+         FROM "notifications"
+         WHERE "user_id" = $1::int
+         ORDER BY "timestamp" DESC;`,
+          [userId]
+        );
+        const notiData = res.rows;
+        return notiData;
+      } catch (error: any) {
+        console.log(
+          chalk.red("PostgresSQL Error: "),
+          error?.message,
+          error?.code
+        );
+        return null;
+      } finally {
+        if (pClient) {
+          this.release(pClient);
+        }
+      }
+    });
+  }
+  async addNoti(userId: number, message: string, type: string) {
+    return await this.retryQuery("addNoti", async () => {
+      let pClient;
+      try {
+        pClient = await this.connect();
+        console.log([userId, message, type]);
+        await pClient.query("BEGIN");
+        const res = await pClient.query(
+          `
+         INSERT INTO "notifications" ("user_id","message","type")
+         VALUES ($1::int, $2::varchar, $3::varchar)
+         RETURNING id;`,
+          [userId, message, type]
+        );
+        if (res.rowCount !== 1) {
+          await pClient.query("ROLLBACK");
+          return -1;
+        }
+        await pClient.query("COMMIT");
+        return { notiId: res.rows[0].id as number };
+      } catch (error: any) {
+        console.log(
+          chalk.red("PostgresSQL Error: "),
+          error?.message,
+          error?.code
+        );
+        if (pClient) {
+          await pClient.query("ROLLBACK");
+        }
         return null;
       } finally {
         if (pClient) {
