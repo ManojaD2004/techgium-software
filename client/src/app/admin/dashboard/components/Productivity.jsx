@@ -59,14 +59,7 @@ import {
 import { BeatLoader } from "react-spinners";
 
 // Skill matrix data remains the same
-const skillMatrixData = [
-  { subject: "Coding", A: 120, B: 110, fullMark: 150 },
-  { subject: "Communication", A: 98, B: 130, fullMark: 150 },
-  { subject: "Teamwork", A: 86, B: 130, fullMark: 150 },
-  { subject: "Problem Solving", A: 99, B: 100, fullMark: 150 },
-  { subject: "Time Management", A: 85, B: 90, fullMark: 150 },
-  { subject: "Technical Knowledge", A: 65, B: 85, fullMark: 150 },
-];
+
 
 const apiResponse = {
   status: "success",
@@ -568,6 +561,15 @@ const apiResponse = {
         productivity: 78.48,
       },
     ],
+    skillMatrixData: [
+        { subject: "Wed", A: 3.51, B: 4.53, fullMark: 8 },
+        { subject: "Tue", A: 3.01, B: 3.9, fullMark: 8 },
+        { subject: "Mon", A: 2.73, B: 3.34, fullMark: 8 },
+        { subject: "Sun", A: 2.75, B: 3.98, fullMark: 8 },
+        { subject: "Sat", A: 3.02, B: 4.09, fullMark: 8 },
+        { subject: "Fri", A: 2.75, B: 3.54, fullMark: 8 },
+        { subject: "Thu", A: 3.29, B: 3.84, fullMark: 8 }
+      ]
   },
 };
 
@@ -623,6 +625,7 @@ export default function EmployeeDashboard() {
     productivityData: [],
     departmentHoursData: [],
     topPerformers: [],
+    skillMatrixData:[],
   });
 
   useEffect(() => {
@@ -638,7 +641,8 @@ export default function EmployeeDashboard() {
           ),
           productivityData: apiResponse.data.productivityData,
           departmentHoursData: apiResponse.data.departmentHoursData,
-          topPerformers: apiResponse.data.topPerformers
+          topPerformers: apiResponse.data.topPerformers,
+          skillMatrixData:apiResponse.data.skillMatrixData
         });
         setLoading(false);
       }, 2000);
@@ -924,19 +928,19 @@ export default function EmployeeDashboard() {
         </CardHeader>
         <CardContent>
           <ResponsiveContainer width="100%" height={400}>
-            <RadarChart outerRadius={150} data={skillMatrixData}>
+            <RadarChart outerRadius={150} data={data.skillMatrixData}>
               <PolarGrid />
               <PolarAngleAxis dataKey="subject" />
               <PolarRadiusAxis />
               <Radar
-                name="Top Performer"
+                name="Team Average"
                 dataKey="A"
                 stroke="#8884d8"
                 fill="#8884d8"
                 fillOpacity={0.6}
               />
               <Radar
-                name="Team Average"
+                name="Top Performer"
                 dataKey="B"
                 stroke="#82ca9d"
                 fill="#82ca9d"
