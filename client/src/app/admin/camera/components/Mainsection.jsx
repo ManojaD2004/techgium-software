@@ -70,7 +70,8 @@ const CameraDashboard = () => {
       
       if (response.ok) {
         toast.success("Tracking Started", {
-          description: "Camera tracking has been initiated successfully."
+          description: "Camera tracking has been initiated successfully.",
+          className:"bg-white text-black"
         });
         
         // Refetch cameras after starting tracking
@@ -135,7 +136,7 @@ const CameraDashboard = () => {
     }));
   };
 
-  // Group cameras by room
+ 
   const groupCamerasByRoom = () => {
     if (!cameraData?.cameras || cameraData.cameras.length === 0) return {};
     
@@ -194,7 +195,7 @@ const CameraDashboard = () => {
             </div>
             <Button 
               size="lg" 
-              className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700"
+              className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white"
               onClick={startTracking}
             >
               <Play className="h-5 w-5" />
