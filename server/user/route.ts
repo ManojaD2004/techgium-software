@@ -2,7 +2,14 @@ import chalk from "chalk";
 import express from "express";
 import { ClerkCache } from "../cache/redis";
 import fileUpload, { UploadedFile } from "express-fileupload";
-import { ModelDBv1, SessionDB, TrackerDBv1, UserDBv1 } from "../db/db";
+import {
+  MiscDB,
+  ModelDBv1,
+  SessionDB,
+  StatisticsDBv1,
+  TrackerDBv1,
+  UserDBv1,
+} from "../db/db";
 import { pythonConfigs, serverConfigs } from "../configs/configs";
 import { v4 } from "uuid";
 import { Cookies, SessionId } from "../types/auth";
@@ -22,6 +29,7 @@ const userRouter = express.Router();
 const v1Routes = express.Router();
 const adminRoutes = express.Router();
 const trackRouter = express.Router();
+const statisticsRouter = express.Router();
 
 // Macros
 const { SESSION_EXPIRE_TIME_IN_DAYS } = serverConfigs;
@@ -1274,13 +1282,55 @@ trackRouter.post("/stop", async (req, res) => {
   }
 });
 
-trackRouter.post("/fake/data", async (req, res) => {
+statisticsRouter.post("/dummy/data", async (req, res) => {
   try {
+    const misc = new MiscDB();
+    const dummy = await misc.addDummyEmployeeData();
+    if (dummy === -1 || dummy === null) {
+      res.status(400).send({
+        status: "fail",
+        data: {
+          message: "Could not insert data, or the database is offline",
+          resDb: dummy,
+        },
+      });
+      return;
+    }
     res.status(200).send({
       status: "success",
       data: {
-        hi: true,
+        resDb: dummy,
       },
+    });
+  } catch (error: any) {
+    console.log(chalk.red(`Error: ${error?.message}`));
+    res.status(400).send({
+      status: "fail",
+      error: error,
+      data: {
+        message: "Internal Server Error!",
+      },
+    });
+  }
+});
+
+statisticsRouter.get("/dashboard", async (req, res) => {
+  try {
+    const statisticsDb = new StatisticsDBv1();
+    const resDb = await statisticsDb.getDashboard();
+    if (resDb === -1 || resDb === null) {
+      res.status(400).send({
+        status: "fail",
+        data: {
+          message: "Could not insert data, or the database is offline",
+          resDb: resDb,
+        },
+      });
+      return;
+    }
+    res.status(200).send({
+      status: "success",
+      data: resDb,
     });
   } catch (error: any) {
     console.log(chalk.red(`Error: ${error?.message}`));
@@ -1296,6 +1346,7 @@ trackRouter.post("/fake/data", async (req, res) => {
 
 v1Routes.use("/admin", adminRoutes);
 v1Routes.use("/track", trackRouter);
+v1Routes.use("/statistics", statisticsRouter);
 userRouter.use("/v1", v1Routes);
 
 export { userRouter };
