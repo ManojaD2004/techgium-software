@@ -1503,10 +1503,7 @@ class StatisticsDBv1 extends DB {
           const totalTime = parseInt(resWeek.rows[0]["total_time"]);
           const totalHours = parseFloat((totalTime / (60 * 60)).toFixed(2));
           const avgProd = parseFloat(
-            (
-              (totalHours / ((totalRows * company.workHours))) *
-              100
-            ).toFixed(2)
+            ((totalHours / (totalRows * company.workHours)) * 100).toFixed(2)
           );
           const weekObj = {
             week: `Week ${i + 1}`,
@@ -1569,6 +1566,7 @@ class StatisticsDBv1 extends DB {
           };
           hoursWeek.push(hourWeekObj);
         }
+        hoursWeek.reverse();
         const res1 = await pClient.query(
           `
           SELECT 
@@ -1602,21 +1600,17 @@ class StatisticsDBv1 extends DB {
           const totalTime = parseInt(resHour.rows[0]["total_time"]);
           const totalHours = parseFloat((totalTime / (60 * 60)).toFixed(2));
           const prodHour = parseFloat(
-            (
-              (totalHours / ((company.workHours * totalRows))) *
-              100
-            ).toFixed(2)
+            ((totalHours / (company.workHours * totalRows)) * 100).toFixed(2)
           );
           const prodObj = {
             empId: empRoom["empId"],
             name: empRoom["name"],
             hours: totalHours,
             productivity: prodHour,
-            avatar: empRoom["avatar"]
+            avatar: empRoom["avatar"],
           };
           productivityData.push(prodObj);
         }
-        productivityData.reverse();
         const res2 = await pClient.query(
           `
           SELECT 
