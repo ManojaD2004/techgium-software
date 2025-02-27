@@ -13,13 +13,17 @@ import API_LINK from "./backendLink/link";
 
 export default function Home() {
   const [adminFormOpen, setAdminFormOpen] = useState(false);
+  const [userFormOpen, setUserFormOpen] = useState(false);
+
+  const openUserForm = () => setUserFormOpen(true);
+  const closeUserForm = () => setUserFormOpen(false);
   const router = useRouter();
 
   const openAdminForm = () => setAdminFormOpen(true);
   const closeAdminForm = () => setAdminFormOpen(false);
 
   const handleUserLogin = () => {
-    router.push("/sign-in");
+    openUserForm();
   };
 
   return (
@@ -40,6 +44,7 @@ export default function Home() {
           {/* Particles for user side */}
           <Particles side="user" />
         </div>
+        <UserLoginForm isOpen={userFormOpen} onClose={closeUserForm} />
 
         {/* Divider line */}
         <div className="absolute w-px h-2/3 bg-white/70 shadow-glow hidden md:block"></div>
@@ -85,19 +90,16 @@ function AdminLoginForm({ isOpen, onClose }) {
       console.log(password);
       const userName = username;
 
-      const response = await fetch(
-        `${API_LINK}/user/v1/login/admin`,
-        {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            "ngrok-skip-browser-warning": "true",
-          },
-          credentials: "include",
+      const response = await fetch(`${API_LINK}/user/v1/login/admin`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "ngrok-skip-browser-warning": "true",
+        },
+        credentials: "include",
 
-          body: JSON.stringify({ userName, password }),
-        }
-      );
+        body: JSON.stringify({ userName, password }),
+      });
 
       const data = await response.json();
       console.log(data);
@@ -170,6 +172,94 @@ function AdminLoginForm({ isOpen, onClose }) {
                   id="password"
                   type="password"
                   placeholder="Enter admin password"
+                  className="h-11"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  required
+                />
+              </div>
+              <Button
+                type="submit"
+                className="w-full h-11 mt-6 bg-gradient-to-r from-indigo-500 to-purple-500 hover:from-indigo-600 hover:to-purple-600 text-white"
+                disabled={isLoading}
+              >
+                {isLoading ? "Logging in..." : "Login"}
+              </Button>
+            </form>
+          </CardContent>
+        </Card>
+      </motion.div>
+    </div>
+  );
+}
+function UserLoginForm({ isOpen, onClose }) {
+  const [username, setUsername] = useState("");
+  const [password, setPassword] = useState("");
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState("");
+  const router = useRouter();
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    setIsLoading(true);
+    router.push('/dashboard')
+  };
+
+  return (
+    <div
+      className={`fixed inset-0 bg-white flex items-center justify-center transition-opacity duration-300 z-50 ${
+        isOpen
+          ? "opacity-100 pointer-events-auto"
+          : "opacity-0 pointer-events-none"
+      }`}
+    >
+      <Button
+        variant="ghost"
+        size="icon"
+        onClick={onClose}
+        className="absolute top-4 right-4 text-black hover:bg-white/10"
+      >
+        <X className="w-10 h-10 " />
+      </Button>
+
+      <motion.div
+        initial={{ y: 20, opacity: 0 }}
+        animate={isOpen ? { y: 0, opacity: 1 } : { y: 20, opacity: 0 }}
+        transition={{ duration: 0.3 }}
+        className="w-full max-w-md"
+      >
+        <Card className="border-0 shadow-xl">
+          <CardHeader className="pb-4">
+            <div className="flex items-center space-x-3">
+              <User className="w-6 h-6 text-indigo-500" />
+              <CardTitle className="text-xl">User Login</CardTitle>
+            </div>
+          </CardHeader>
+          <CardContent>
+            <form className="space-y-4" onSubmit={handleSubmit}>
+              {error && (
+                <div className="p-3 bg-red-100 border border-red-200 text-red-600 text-sm rounded">
+                  {error}
+                </div>
+              )}
+              <div className="space-y-2">
+                <Label htmlFor="username">Username</Label>
+                <Input
+                  id="username"
+                  type="text"
+                  placeholder="Enter your username"
+                  className="h-11"
+                  value={username}
+                  onChange={(e) => setUsername(e.target.value)}
+                  required
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="password">Password</Label>
+                <Input
+                  id="password"
+                  type="password"
+                  placeholder="Enter your password"
                   className="h-11"
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
