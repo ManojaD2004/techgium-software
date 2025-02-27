@@ -1616,6 +1616,7 @@ class StatisticsDBv1 extends DB {
           };
           productivityData.push(prodObj);
         }
+        productivityData.reverse();
         const res2 = await pClient.query(
           `
           SELECT 
