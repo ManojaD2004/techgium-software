@@ -1,5 +1,5 @@
 "use client";
-import React, { useState, useMemo } from "react";
+import React, { useState, useMemo,useEffect } from "react";
 import {
   Card,
   CardContent,
@@ -56,521 +56,7 @@ import {
   BellRing,
   Calendar as CalendarIcon,
 } from "lucide-react";
-
-const apiResponse ={
-    "status": "success",
-    "data": {
-        "employeeData": [
-            {
-                "id": 1,
-                "roomId": 1,
-                "empId": 7,
-                "name": "Manoja D",
-                "phoneNo": "9902798895",
-                "avatar": "/file/v1/image/242ad1.jpg",
-                "status": "Active",
-                "room": "CS Lab",
-                "hoursThisWeek": 25.57,
-                "productivity": 45.66,
-                "trend": -5.54
-            },
-            {
-                "id": 4,
-                "roomId": 1,
-                "empId": 9,
-                "name": "Vilas CP",
-                "phoneNo": "9845263712",
-                "avatar": "/file/v1/image/2a80df.jpeg",
-                "status": "Active",
-                "room": "CS Lab",
-                "hoursThisWeek": 20.55,
-                "productivity": 36.7,
-                "trend": -5.91
-            },
-            {
-                "id": 5,
-                "roomId": 1,
-                "empId": 11,
-                "name": "Tejas Krishna",
-                "phoneNo": "8105516094",
-                "avatar": "/file/v1/image/2cb1d8.jpeg",
-                "status": "Active",
-                "room": "CS Lab",
-                "hoursThisWeek": 21,
-                "productivity": 37.5,
-                "trend": 1.84
-            },
-            {
-                "id": 7,
-                "roomId": 1,
-                "empId": 12,
-                "name": "Aryan Choudhary",
-                "phoneNo": "8107288787",
-                "avatar": "/file/v1/image/94698a.jpg",
-                "status": "Active",
-                "room": "CS Lab",
-                "hoursThisWeek": 18.13,
-                "productivity": 32.38,
-                "trend": -23.11
-            },
-            {
-                "id": 8,
-                "roomId": 1,
-                "empId": 13,
-                "name": "Aditya Srinivasan",
-                "phoneNo": "9880284141",
-                "avatar": "/file/v1/image/32e470.jpg",
-                "status": "Active",
-                "room": "CS Lab",
-                "hoursThisWeek": 19.76,
-                "productivity": 35.29,
-                "trend": 6.07
-            },
-            {
-                "id": 9,
-                "roomId": 1,
-                "empId": 14,
-                "name": "Rahul S",
-                "phoneNo": "9980941652",
-                "avatar": "/file/v1/image/f16f3f.jpg",
-                "status": "Active",
-                "room": "CS Lab",
-                "hoursThisWeek": 20.41,
-                "productivity": 36.45,
-                "trend": -14.5
-            },
-            {
-                "id": 10,
-                "roomId": 1,
-                "empId": 15,
-                "name": "Giridhar D",
-                "phoneNo": "8660304942",
-                "avatar": "/file/v1/image/2ddb6c.jpg",
-                "status": "Active",
-                "room": "CS Lab",
-                "hoursThisWeek": 22.5,
-                "productivity": 40.18,
-                "trend": 13.98
-            },
-            {
-                "id": 12,
-                "roomId": 3,
-                "empId": 9,
-                "name": "Vilas CP",
-                "phoneNo": "9845263712",
-                "avatar": "/file/v1/image/2a80df.jpeg",
-                "status": "Active",
-                "room": "Cafeteria",
-                "hoursThisWeek": 16.15,
-                "productivity": 28.84,
-                "trend": -10.67
-            },
-            {
-                "id": 13,
-                "roomId": 3,
-                "empId": 11,
-                "name": "Tejas Krishna",
-                "phoneNo": "8105516094",
-                "avatar": "/file/v1/image/2cb1d8.jpeg",
-                "status": "Active",
-                "room": "Cafeteria",
-                "hoursThisWeek": 15.59,
-                "productivity": 27.84,
-                "trend": -12.81
-            },
-            {
-                "id": 14,
-                "roomId": 3,
-                "empId": 7,
-                "name": "Manoja D",
-                "phoneNo": "9902798895",
-                "avatar": "/file/v1/image/242ad1.jpg",
-                "status": "Active",
-                "room": "Cafeteria",
-                "hoursThisWeek": 20.56,
-                "productivity": 36.71,
-                "trend": -6.76
-            },
-            {
-                "id": 15,
-                "roomId": 3,
-                "empId": 12,
-                "name": "Aryan Choudhary",
-                "phoneNo": "8107288787",
-                "avatar": "/file/v1/image/94698a.jpg",
-                "status": "Active",
-                "room": "Cafeteria",
-                "hoursThisWeek": 27.77,
-                "productivity": 49.59,
-                "trend": 43.37
-            },
-            {
-                "id": 16,
-                "roomId": 3,
-                "empId": 13,
-                "name": "Aditya Srinivasan",
-                "phoneNo": "9880284141",
-                "avatar": "/file/v1/image/32e470.jpg",
-                "status": "Active",
-                "room": "Cafeteria",
-                "hoursThisWeek": 17.48,
-                "productivity": 31.21,
-                "trend": 19.07
-            },
-            {
-                "id": 17,
-                "roomId": 3,
-                "empId": 14,
-                "name": "Rahul S",
-                "phoneNo": "9980941652",
-                "avatar": "/file/v1/image/f16f3f.jpg",
-                "status": "Active",
-                "room": "Cafeteria",
-                "hoursThisWeek": 20.42,
-                "productivity": 36.46,
-                "trend": -5.38
-            },
-            {
-                "id": 18,
-                "roomId": 3,
-                "empId": 15,
-                "name": "Giridhar D",
-                "phoneNo": "8660304942",
-                "avatar": "/file/v1/image/2ddb6c.jpg",
-                "status": "Active",
-                "room": "Cafeteria",
-                "hoursThisWeek": 26.35,
-                "productivity": 47.05,
-                "trend": 17.53
-            },
-            {
-                "id": 19,
-                "roomId": 4,
-                "empId": 9,
-                "name": "Vilas CP",
-                "phoneNo": "9845263712",
-                "avatar": "/file/v1/image/2a80df.jpeg",
-                "status": "Active",
-                "room": "AIML Lab",
-                "hoursThisWeek": 20.54,
-                "productivity": 36.68,
-                "trend": -2.79
-            },
-            {
-                "id": 20,
-                "roomId": 4,
-                "empId": 11,
-                "name": "Tejas Krishna",
-                "phoneNo": "8105516094",
-                "avatar": "/file/v1/image/2cb1d8.jpeg",
-                "status": "Active",
-                "room": "AIML Lab",
-                "hoursThisWeek": 21.08,
-                "productivity": 37.64,
-                "trend": 9.51
-            },
-            {
-                "id": 21,
-                "roomId": 4,
-                "empId": 7,
-                "name": "Manoja D",
-                "phoneNo": "9902798895",
-                "avatar": "/file/v1/image/242ad1.jpg",
-                "status": "Active",
-                "room": "AIML Lab",
-                "hoursThisWeek": 24.87,
-                "productivity": 44.41,
-                "trend": 3.54
-            },
-            {
-                "id": 22,
-                "roomId": 4,
-                "empId": 12,
-                "name": "Aryan Choudhary",
-                "phoneNo": "8107288787",
-                "avatar": "/file/v1/image/94698a.jpg",
-                "status": "Active",
-                "room": "AIML Lab",
-                "hoursThisWeek": 23.08,
-                "productivity": 41.21,
-                "trend": 3.64
-            },
-            {
-                "id": 23,
-                "roomId": 4,
-                "empId": 13,
-                "name": "Aditya Srinivasan",
-                "phoneNo": "9880284141",
-                "avatar": "/file/v1/image/32e470.jpg",
-                "status": "Active",
-                "room": "AIML Lab",
-                "hoursThisWeek": 16.58,
-                "productivity": 29.61,
-                "trend": 26.18
-            },
-            {
-                "id": 24,
-                "roomId": 4,
-                "empId": 14,
-                "name": "Rahul S",
-                "phoneNo": "9980941652",
-                "avatar": "/file/v1/image/f16f3f.jpg",
-                "status": "Active",
-                "room": "AIML Lab",
-                "hoursThisWeek": 15.41,
-                "productivity": 27.52,
-                "trend": -39.88
-            },
-            {
-                "id": 25,
-                "roomId": 4,
-                "empId": 15,
-                "name": "Giridhar D",
-                "phoneNo": "8660304942",
-                "avatar": "/file/v1/image/2ddb6c.jpg",
-                "status": "Active",
-                "room": "AIML Lab",
-                "hoursThisWeek": 20.41,
-                "productivity": 36.45,
-                "trend": -4.18
-            },
-            {
-                "id": 26,
-                "roomId": 5,
-                "empId": 9,
-                "name": "Vilas CP",
-                "phoneNo": "9845263712",
-                "avatar": "/file/v1/image/2a80df.jpeg",
-                "status": "Active",
-                "room": "Research Department",
-                "hoursThisWeek": 23.82,
-                "productivity": 42.54,
-                "trend": 14.19
-            },
-            {
-                "id": 27,
-                "roomId": 5,
-                "empId": 7,
-                "name": "Manoja D",
-                "phoneNo": "9902798895",
-                "avatar": "/file/v1/image/242ad1.jpg",
-                "status": "Active",
-                "room": "Research Department",
-                "hoursThisWeek": 17.43,
-                "productivity": 31.12,
-                "trend": -21.56
-            },
-            {
-                "id": 28,
-                "roomId": 5,
-                "empId": 11,
-                "name": "Tejas Krishna",
-                "phoneNo": "8105516094",
-                "avatar": "/file/v1/image/2cb1d8.jpeg",
-                "status": "Active",
-                "room": "Research Department",
-                "hoursThisWeek": 24.02,
-                "productivity": 42.89,
-                "trend": 39
-            },
-            {
-                "id": 29,
-                "roomId": 5,
-                "empId": 12,
-                "name": "Aryan Choudhary",
-                "phoneNo": "8107288787",
-                "avatar": "/file/v1/image/94698a.jpg",
-                "status": "Active",
-                "room": "Research Department",
-                "hoursThisWeek": 22.97,
-                "productivity": 41.02,
-                "trend": -4.29
-            },
-            {
-                "id": 30,
-                "roomId": 5,
-                "empId": 13,
-                "name": "Aditya Srinivasan",
-                "phoneNo": "9880284141",
-                "avatar": "/file/v1/image/32e470.jpg",
-                "status": "Active",
-                "room": "Research Department",
-                "hoursThisWeek": 16.18,
-                "productivity": 28.89,
-                "trend": -18.9
-            },
-            {
-                "id": 31,
-                "roomId": 5,
-                "empId": 14,
-                "name": "Rahul S",
-                "phoneNo": "9980941652",
-                "avatar": "/file/v1/image/f16f3f.jpg",
-                "status": "Active",
-                "room": "Research Department",
-                "hoursThisWeek": 28.03,
-                "productivity": 50.05,
-                "trend": 17.48
-            },
-            {
-                "id": 32,
-                "roomId": 5,
-                "empId": 15,
-                "name": "Giridhar D",
-                "phoneNo": "8660304942",
-                "avatar": "/file/v1/image/2ddb6c.jpg",
-                "status": "Active",
-                "room": "Research Department",
-                "hoursThisWeek": 23.04,
-                "productivity": 41.14,
-                "trend": -0.26
-            }
-        ],
-        "weeklyTrendData": [
-            {
-                "week": "Week 1",
-                "totalHours": 589.7,
-                "avgProductivity": 75.22
-            },
-            {
-                "week": "Week 2",
-                "totalHours": 589.41,
-                "avgProductivity": 75.18
-            },
-            {
-                "week": "Week 3",
-                "totalHours": 601.32,
-                "avgProductivity": 76.7
-            },
-            {
-                "week": "Week 4",
-                "totalHours": 571.9,
-                "avgProductivity": 72.95
-            }
-        ],
-        "hoursWorkedData": [
-            {
-                "day": "Wed",
-                "This Week": 98.35,
-                "Last Week": 84.76
-            },
-            {
-                "day": "Tue",
-                "This Week": 84.34,
-                "Last Week": 82.36
-            },
-            {
-                "day": "Mon",
-                "This Week": 76.41,
-                "Last Week": 89.44
-            },
-            {
-                "day": "Sun",
-                "This Week": 77.11,
-                "Last Week": 85.16
-            },
-            {
-                "day": "Sat",
-                "This Week": 84.47,
-                "Last Week": 79.46
-            },
-            {
-                "day": "Fri",
-                "This Week": 76.89,
-                "Last Week": 80.91
-            },
-            {
-                "day": "Thu",
-                "This Week": 92.14,
-                "Last Week": 87.31
-            }
-        ],
-        "productivityData": [
-            {
-                "name": "Manoja D",
-                "hours": 394.36,
-                "productivity": 78.87
-            },
-            {
-                "name": "Vilas CP",
-                "hours": 370.82,
-                "productivity": 74.76
-            },
-            {
-                "name": "Tejas Krishna",
-                "hours": 341.96,
-                "productivity": 68.94
-            },
-            {
-                "name": "Aryan Choudhary",
-                "hours": 386.14,
-                "productivity": 77.85
-            },
-            {
-                "name": "Aditya Srinivasan",
-                "hours": 345.12,
-                "productivity": 69.58
-            },
-            {
-                "name": "Rahul S",
-                "hours": 398.67,
-                "productivity": 80.38
-            },
-            {
-                "name": "Giridhar D",
-                "hours": 389.26,
-                "productivity": 78.48
-            }
-        ],
-        "departmentHoursData": [
-            {
-                "name": "Cafeteria",
-                "hours": 628.86
-            },
-            {
-                "name": "AIML Lab",
-                "hours": 658.84
-            },
-            {
-                "name": "CS Lab",
-                "hours": 660.13
-            },
-            {
-                "name": "Research Department",
-                "hours": 678.49
-            }
-        ],
-        "topPerformers": [
-            {
-                "name": "Rahul S",
-                "hours": 398.67,
-                "productivity": 80.38
-            },
-            {
-                "name": "Manoja D",
-                "hours": 394.36,
-                "productivity": 78.87
-            },
-            {
-                "name": "Giridhar D",
-                "hours": 389.26,
-                "productivity": 78.48
-            }
-        ]
-    }
-}
-
-// Data processing
-const employeeData = apiResponse.data.employeeData;
-const weeklyTrendData = apiResponse.data.weeklyTrendData;
-const hoursWorkedData = apiResponse.data.hoursWorkedData.sort(
-  (a, b) =>
-    ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"].indexOf(a.day) -
-    ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"].indexOf(b.day)
-);
-const productivityData = apiResponse.data.productivityData;
-const departmentHoursData = apiResponse.data.departmentHoursData;
-const topPerformers = apiResponse.data.topPerformers;
+import { BeatLoader } from "react-spinners";
 
 // Skill matrix data remains the same
 const skillMatrixData = [
@@ -582,6 +68,512 @@ const skillMatrixData = [
   { subject: "Technical Knowledge", A: 65, B: 85, fullMark: 150 },
 ];
 
+const apiResponse = {
+  status: "success",
+  data: {
+    employeeData: [
+      {
+        id: 1,
+        roomId: 1,
+        empId: 7,
+        name: "Manoja D",
+        phoneNo: "9902798895",
+        avatar: "/file/v1/image/242ad1.jpg",
+        status: "Active",
+        room: "CS Lab",
+        hoursThisWeek: 25.57,
+        productivity: 45.66,
+        trend: -5.54,
+      },
+      {
+        id: 4,
+        roomId: 1,
+        empId: 9,
+        name: "Vilas CP",
+        phoneNo: "9845263712",
+        avatar: "/file/v1/image/2a80df.jpeg",
+        status: "Active",
+        room: "CS Lab",
+        hoursThisWeek: 20.55,
+        productivity: 36.7,
+        trend: -5.91,
+      },
+      {
+        id: 5,
+        roomId: 1,
+        empId: 11,
+        name: "Tejas Krishna",
+        phoneNo: "8105516094",
+        avatar: "/file/v1/image/2cb1d8.jpeg",
+        status: "Active",
+        room: "CS Lab",
+        hoursThisWeek: 21,
+        productivity: 37.5,
+        trend: 1.84,
+      },
+      {
+        id: 7,
+        roomId: 1,
+        empId: 12,
+        name: "Aryan Choudhary",
+        phoneNo: "8107288787",
+        avatar: "/file/v1/image/94698a.jpg",
+        status: "Active",
+        room: "CS Lab",
+        hoursThisWeek: 18.13,
+        productivity: 32.38,
+        trend: -23.11,
+      },
+      {
+        id: 8,
+        roomId: 1,
+        empId: 13,
+        name: "Aditya Srinivasan",
+        phoneNo: "9880284141",
+        avatar: "/file/v1/image/32e470.jpg",
+        status: "Active",
+        room: "CS Lab",
+        hoursThisWeek: 19.76,
+        productivity: 35.29,
+        trend: 6.07,
+      },
+      {
+        id: 9,
+        roomId: 1,
+        empId: 14,
+        name: "Rahul S",
+        phoneNo: "9980941652",
+        avatar: "/file/v1/image/f16f3f.jpg",
+        status: "Active",
+        room: "CS Lab",
+        hoursThisWeek: 20.41,
+        productivity: 36.45,
+        trend: -14.5,
+      },
+      {
+        id: 10,
+        roomId: 1,
+        empId: 15,
+        name: "Giridhar D",
+        phoneNo: "8660304942",
+        avatar: "/file/v1/image/2ddb6c.jpg",
+        status: "Active",
+        room: "CS Lab",
+        hoursThisWeek: 22.5,
+        productivity: 40.18,
+        trend: 13.98,
+      },
+      {
+        id: 12,
+        roomId: 3,
+        empId: 9,
+        name: "Vilas CP",
+        phoneNo: "9845263712",
+        avatar: "/file/v1/image/2a80df.jpeg",
+        status: "Active",
+        room: "Cafeteria",
+        hoursThisWeek: 16.15,
+        productivity: 28.84,
+        trend: -10.67,
+      },
+      {
+        id: 13,
+        roomId: 3,
+        empId: 11,
+        name: "Tejas Krishna",
+        phoneNo: "8105516094",
+        avatar: "/file/v1/image/2cb1d8.jpeg",
+        status: "Active",
+        room: "Cafeteria",
+        hoursThisWeek: 15.59,
+        productivity: 27.84,
+        trend: -12.81,
+      },
+      {
+        id: 14,
+        roomId: 3,
+        empId: 7,
+        name: "Manoja D",
+        phoneNo: "9902798895",
+        avatar: "/file/v1/image/242ad1.jpg",
+        status: "Active",
+        room: "Cafeteria",
+        hoursThisWeek: 20.56,
+        productivity: 36.71,
+        trend: -6.76,
+      },
+      {
+        id: 15,
+        roomId: 3,
+        empId: 12,
+        name: "Aryan Choudhary",
+        phoneNo: "8107288787",
+        avatar: "/file/v1/image/94698a.jpg",
+        status: "Active",
+        room: "Cafeteria",
+        hoursThisWeek: 27.77,
+        productivity: 49.59,
+        trend: 43.37,
+      },
+      {
+        id: 16,
+        roomId: 3,
+        empId: 13,
+        name: "Aditya Srinivasan",
+        phoneNo: "9880284141",
+        avatar: "/file/v1/image/32e470.jpg",
+        status: "Active",
+        room: "Cafeteria",
+        hoursThisWeek: 17.48,
+        productivity: 31.21,
+        trend: 19.07,
+      },
+      {
+        id: 17,
+        roomId: 3,
+        empId: 14,
+        name: "Rahul S",
+        phoneNo: "9980941652",
+        avatar: "/file/v1/image/f16f3f.jpg",
+        status: "Active",
+        room: "Cafeteria",
+        hoursThisWeek: 20.42,
+        productivity: 36.46,
+        trend: -5.38,
+      },
+      {
+        id: 18,
+        roomId: 3,
+        empId: 15,
+        name: "Giridhar D",
+        phoneNo: "8660304942",
+        avatar: "/file/v1/image/2ddb6c.jpg",
+        status: "Active",
+        room: "Cafeteria",
+        hoursThisWeek: 26.35,
+        productivity: 47.05,
+        trend: 17.53,
+      },
+      {
+        id: 19,
+        roomId: 4,
+        empId: 9,
+        name: "Vilas CP",
+        phoneNo: "9845263712",
+        avatar: "/file/v1/image/2a80df.jpeg",
+        status: "Active",
+        room: "AIML Lab",
+        hoursThisWeek: 20.54,
+        productivity: 36.68,
+        trend: -2.79,
+      },
+      {
+        id: 20,
+        roomId: 4,
+        empId: 11,
+        name: "Tejas Krishna",
+        phoneNo: "8105516094",
+        avatar: "/file/v1/image/2cb1d8.jpeg",
+        status: "Active",
+        room: "AIML Lab",
+        hoursThisWeek: 21.08,
+        productivity: 37.64,
+        trend: 9.51,
+      },
+      {
+        id: 21,
+        roomId: 4,
+        empId: 7,
+        name: "Manoja D",
+        phoneNo: "9902798895",
+        avatar: "/file/v1/image/242ad1.jpg",
+        status: "Active",
+        room: "AIML Lab",
+        hoursThisWeek: 24.87,
+        productivity: 44.41,
+        trend: 3.54,
+      },
+      {
+        id: 22,
+        roomId: 4,
+        empId: 12,
+        name: "Aryan Choudhary",
+        phoneNo: "8107288787",
+        avatar: "/file/v1/image/94698a.jpg",
+        status: "Active",
+        room: "AIML Lab",
+        hoursThisWeek: 23.08,
+        productivity: 41.21,
+        trend: 3.64,
+      },
+      {
+        id: 23,
+        roomId: 4,
+        empId: 13,
+        name: "Aditya Srinivasan",
+        phoneNo: "9880284141",
+        avatar: "/file/v1/image/32e470.jpg",
+        status: "Active",
+        room: "AIML Lab",
+        hoursThisWeek: 16.58,
+        productivity: 29.61,
+        trend: 26.18,
+      },
+      {
+        id: 24,
+        roomId: 4,
+        empId: 14,
+        name: "Rahul S",
+        phoneNo: "9980941652",
+        avatar: "/file/v1/image/f16f3f.jpg",
+        status: "Active",
+        room: "AIML Lab",
+        hoursThisWeek: 15.41,
+        productivity: 27.52,
+        trend: -39.88,
+      },
+      {
+        id: 25,
+        roomId: 4,
+        empId: 15,
+        name: "Giridhar D",
+        phoneNo: "8660304942",
+        avatar: "/file/v1/image/2ddb6c.jpg",
+        status: "Active",
+        room: "AIML Lab",
+        hoursThisWeek: 20.41,
+        productivity: 36.45,
+        trend: -4.18,
+      },
+      {
+        id: 26,
+        roomId: 5,
+        empId: 9,
+        name: "Vilas CP",
+        phoneNo: "9845263712",
+        avatar: "/file/v1/image/2a80df.jpeg",
+        status: "Active",
+        room: "Research Department",
+        hoursThisWeek: 23.82,
+        productivity: 42.54,
+        trend: 14.19,
+      },
+      {
+        id: 27,
+        roomId: 5,
+        empId: 7,
+        name: "Manoja D",
+        phoneNo: "9902798895",
+        avatar: "/file/v1/image/242ad1.jpg",
+        status: "Active",
+        room: "Research Department",
+        hoursThisWeek: 17.43,
+        productivity: 31.12,
+        trend: -21.56,
+      },
+      {
+        id: 28,
+        roomId: 5,
+        empId: 11,
+        name: "Tejas Krishna",
+        phoneNo: "8105516094",
+        avatar: "/file/v1/image/2cb1d8.jpeg",
+        status: "Active",
+        room: "Research Department",
+        hoursThisWeek: 24.02,
+        productivity: 42.89,
+        trend: 39,
+      },
+      {
+        id: 29,
+        roomId: 5,
+        empId: 12,
+        name: "Aryan Choudhary",
+        phoneNo: "8107288787",
+        avatar: "/file/v1/image/94698a.jpg",
+        status: "Active",
+        room: "Research Department",
+        hoursThisWeek: 22.97,
+        productivity: 41.02,
+        trend: -4.29,
+      },
+      {
+        id: 30,
+        roomId: 5,
+        empId: 13,
+        name: "Aditya Srinivasan",
+        phoneNo: "9880284141",
+        avatar: "/file/v1/image/32e470.jpg",
+        status: "Active",
+        room: "Research Department",
+        hoursThisWeek: 16.18,
+        productivity: 28.89,
+        trend: -18.9,
+      },
+      {
+        id: 31,
+        roomId: 5,
+        empId: 14,
+        name: "Rahul S",
+        phoneNo: "9980941652",
+        avatar: "/file/v1/image/f16f3f.jpg",
+        status: "Active",
+        room: "Research Department",
+        hoursThisWeek: 28.03,
+        productivity: 50.05,
+        trend: 17.48,
+      },
+      {
+        id: 32,
+        roomId: 5,
+        empId: 15,
+        name: "Giridhar D",
+        phoneNo: "8660304942",
+        avatar: "/file/v1/image/2ddb6c.jpg",
+        status: "Active",
+        room: "Research Department",
+        hoursThisWeek: 23.04,
+        productivity: 41.14,
+        trend: -0.26,
+      },
+    ],
+    weeklyTrendData: [
+      {
+        week: "Week 1",
+        totalHours: 589.7,
+        avgProductivity: 75.22,
+      },
+      {
+        week: "Week 2",
+        totalHours: 589.41,
+        avgProductivity: 75.18,
+      },
+      {
+        week: "Week 3",
+        totalHours: 601.32,
+        avgProductivity: 76.7,
+      },
+      {
+        week: "Week 4",
+        totalHours: 571.9,
+        avgProductivity: 72.95,
+      },
+    ],
+    hoursWorkedData: [
+      {
+        day: "Wed",
+        "This Week": 98.35,
+        "Last Week": 84.76,
+      },
+      {
+        day: "Tue",
+        "This Week": 84.34,
+        "Last Week": 82.36,
+      },
+      {
+        day: "Mon",
+        "This Week": 76.41,
+        "Last Week": 89.44,
+      },
+      {
+        day: "Sun",
+        "This Week": 77.11,
+        "Last Week": 85.16,
+      },
+      {
+        day: "Sat",
+        "This Week": 84.47,
+        "Last Week": 79.46,
+      },
+      {
+        day: "Fri",
+        "This Week": 76.89,
+        "Last Week": 80.91,
+      },
+      {
+        day: "Thu",
+        "This Week": 92.14,
+        "Last Week": 87.31,
+      },
+    ],
+    productivityData: [
+      {
+        name: "Manoja D",
+        hours: 394.36,
+        productivity: 78.87,
+      },
+      {
+        name: "Vilas CP",
+        hours: 370.82,
+        productivity: 74.76,
+      },
+      {
+        name: "Tejas Krishna",
+        hours: 341.96,
+        productivity: 68.94,
+      },
+      {
+        name: "Aryan Choudhary",
+        hours: 386.14,
+        productivity: 77.85,
+      },
+      {
+        name: "Aditya Srinivasan",
+        hours: 345.12,
+        productivity: 69.58,
+      },
+      {
+        name: "Rahul S",
+        hours: 398.67,
+        productivity: 80.38,
+      },
+      {
+        name: "Giridhar D",
+        hours: 389.26,
+        productivity: 78.48,
+      },
+    ],
+    departmentHoursData: [
+      {
+        name: "Cafeteria",
+        hours: 628.86,
+      },
+      {
+        name: "AIML Lab",
+        hours: 658.84,
+      },
+      {
+        name: "CS Lab",
+        hours: 660.13,
+      },
+      {
+        name: "Research Department",
+        hours: 678.49,
+      },
+    ],
+    topPerformers: [
+      {
+        name: "Rahul S",
+        hours: 398.67,
+        productivity: 80.38,
+      },
+      {
+        name: "Manoja D",
+        hours: 394.36,
+        productivity: 78.87,
+      },
+      {
+        name: "Giridhar D",
+        hours: 389.26,
+        productivity: 78.48,
+      },
+    ],
+  },
+};
+
+// Data processing
+
+
 // Constants
 const COLORS = [
   "#0088FE",
@@ -592,7 +584,6 @@ const COLORS = [
   "#83a6ed",
 ];
 const RADIAN = Math.PI / 180;
-const uniqueRooms = [...new Set(employeeData.map((employee) => employee.room))];
 
 // Custom label for pie chart
 const renderCustomizedLabel = ({
@@ -624,32 +615,74 @@ const renderCustomizedLabel = ({
 export default function EmployeeDashboard() {
   const [timeRange, setTimeRange] = useState("week");
   const [selectedRoom, setSelectedRoom] = useState("all");
+  const [loading, setLoading] = useState(true);
+  const [data, setData] = useState({
+    employeeData: [],
+    weeklyTrendData: [],
+    hoursWorkedData: [],
+    productivityData: [],
+    departmentHoursData: [],
+    topPerformers: [],
+  });
+
+  useEffect(() => {
+    // Simulate API call with 2 second delay
+    const fetchData = async () => {
+      setTimeout(() => {
+        setData({
+          employeeData: apiResponse.data.employeeData,
+          weeklyTrendData: apiResponse.data.weeklyTrendData,
+          hoursWorkedData: apiResponse.data.hoursWorkedData.sort((a, b) =>
+            ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'].indexOf(a.day) -
+            ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'].indexOf(b.day)
+          ),
+          productivityData: apiResponse.data.productivityData,
+          departmentHoursData: apiResponse.data.departmentHoursData,
+          topPerformers: apiResponse.data.topPerformers
+        });
+        setLoading(false);
+      }, 2000);
+    };
+
+    fetchData();
+  }, []);
 
   // Calculate metrics
   const totalHours = useMemo(
-    () =>
-      employeeData.reduce((sum, emp) => sum + emp.hoursThisWeek, 0).toFixed(1),
-    [employeeData]
+    () => data.employeeData.reduce((sum, emp) => sum + emp.hoursThisWeek, 0).toFixed(1),
+    [data.employeeData]
   );
 
   const avgProductivity = useMemo(
-    () =>
-      (
-        employeeData.reduce((sum, emp) => sum + emp.productivity, 0) /
-        employeeData.length
-      ).toFixed(1),
-    [employeeData]
+    () => (
+      data.employeeData.reduce((sum, emp) => sum + emp.productivity, 0) /
+      data.employeeData.length
+    ).toFixed(1),
+    [data.employeeData]
   );
 
   const activeEmployees = useMemo(
-    () =>
-      new Set(
-        employeeData
-          .filter((emp) => emp.status === "Active")
-          .map((emp) => emp.empId)
-      ).size,
-    [employeeData]
+    () => new Set(
+      data.employeeData
+        .filter(emp => emp.status === 'Active')
+        .map(emp => emp.empId)
+    ).size,
+    [data.employeeData]
   );
+
+  const uniqueRooms = useMemo(
+    () => [...new Set(data.employeeData.map(employee => employee.room))],
+    [data.employeeData]
+  );
+
+  if (loading) {
+    return (
+      <div className="flex justify-center items-center min-h-screen bg-gray-50 w-[1150px]">
+       <BeatLoader/>
+      </div>
+    );
+  }
+
 
   return (
     <div className="p-6 bg-gradient-to-br from-gray-50 to-blue-50 min-h-screen">
@@ -728,10 +761,10 @@ export default function EmployeeDashboard() {
                   Top Performer
                 </p>
                 <h3 className="text-2xl font-bold mt-1">
-                  {topPerformers[0]?.name}
+                  {data.topPerformers[0]?.name}
                 </h3>
                 <p className="text-xs text-gray-500 mt-1">
-                  {topPerformers[0]?.productivity}% productivity rate
+                  {data.topPerformers[0]?.productivity}% productivity rate
                 </p>
               </div>
               <div className="h-12 w-12 bg-yellow-100 rounded-full flex items-center justify-center">
@@ -769,7 +802,7 @@ export default function EmployeeDashboard() {
         </CardHeader>
         <CardContent>
           <ResponsiveContainer width="100%" height={300}>
-            <AreaChart data={weeklyTrendData}>
+            <AreaChart data={data.weeklyTrendData}>
               <defs>
                 <linearGradient id="colorHours" x1="0" y1="0" x2="0" y2="1">
                   <stop offset="5%" stopColor="#8884d8" stopOpacity={0.8} />
@@ -824,7 +857,7 @@ export default function EmployeeDashboard() {
           </CardHeader>
           <CardContent>
             <ResponsiveContainer width="100%" height={300}>
-              <LineChart data={hoursWorkedData}>
+              <LineChart data={data.hoursWorkedData}>
                 <CartesianGrid strokeDasharray="3 3" />
                 <XAxis dataKey="day" />
                 <YAxis />
@@ -857,7 +890,7 @@ export default function EmployeeDashboard() {
             <ResponsiveContainer width="100%" height={300}>
               <PieChart>
                 <Pie
-                  data={departmentHoursData}
+                  data={data.departmentHoursData}
                   cx="50%"
                   cy="50%"
                   labelLine={false}
@@ -866,7 +899,7 @@ export default function EmployeeDashboard() {
                   dataKey="hours"
                   label={renderCustomizedLabel}
                 >
-                  {departmentHoursData.map((entry, index) => (
+                  {data.departmentHoursData.map((entry, index) => (
                     <Cell
                       key={`cell-${index}`}
                       fill={COLORS[index % COLORS.length]}
@@ -928,7 +961,7 @@ export default function EmployeeDashboard() {
           <CardContent>
             <ResponsiveContainer width="100%" height={300}>
               <BarChart
-                data={productivityData}
+                data={data.productivityData}
                 margin={{ top: 20, right: 30, left: 20, bottom: 5 }}
               >
                 <CartesianGrid strokeDasharray="3 3" />
@@ -965,9 +998,9 @@ export default function EmployeeDashboard() {
         </CardHeader>
         <CardContent>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-            {topPerformers.map((employee, index) => (
+            {data.topPerformers.map((employee, index) => (
               <div
-                key={employee.id}
+                key={employee.name}
                 className="bg-white rounded-lg p-6 shadow-md border border-gray-100"
               >
                 <div className="flex flex-col items-center text-center">
@@ -1059,7 +1092,7 @@ export default function EmployeeDashboard() {
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-gray-200">
-                      {employeeData
+                      {data.employeeData
                         .filter(
                           (employee) => tab === "all" || employee.room === tab
                         )
