@@ -7,5 +7,54 @@
       "./images/f50fc2.jpg",
       "./images/242ad1.jpg"
     ]
+  },
+  "9": {
+    "empName": "Vilas CP",
+    "empUserName": "vilas-cp-8f6887",
+    "empId": "9",
+    "images": [
+      "./images/2a80df.jpeg",
+      "./images/3a3835.jpeg"
+    ]
+  },
+  "11": {
+    "empName": "Tejas Krishna",
+    "empUserName": "tejas-krishna-afacb1",
+    "empId": "11",
+    "images": [
+      "./images/2cb1d8.jpeg"
+    ]
+  },
+  "12": {
+    "empName": "Aryan Choudhary",
+    "empUserName": "aryan-choudhary-ffabac",
+    "empId": "12",
+    "images": [
+      "./images/94698a.jpg"
+    ]
+  },
+  "13": {
+    "empName": "Aditya Srinivasan",
+    "empUserName": "aditya-srinivasan-27f817",
+    "empId": "13",
+    "images": [
+      "./images/32e470.jpg"
+    ]
+  },
+  "14": {
+    "empName": "Rahul S",
+    "empUserName": "rahul-s-d330f0",
+    "empId": "14",
+    "images": [
+      "./images/f16f3f.jpg"
+    ]
+  },
+  "15": {
+    "empName": "Giridhar D",
+    "empUserName": "giridhar-d-d69b81",
+    "empId": "15",
+    "images": [
+      "./images/2ddb6c.jpg"
+    ]
   }
 }
