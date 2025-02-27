@@ -273,7 +273,7 @@ const RoomManagement = () => {
 
           <Button
             onClick={() => setIsDialogOpen(true)}
-            className="bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white shadow-lg shadow-blue-200 transition-all hover:shadow-xl px-8 py-6 h-auto rounded-xl"
+            className="bg-gradient-to-r from-purple-600 via-indigo-600 to-blue-600 hover:from-blue-700 hover:to-indigo-700 text-white shadow-lg shadow-blue-200 transition-all hover:shadow-xl px-8 py-6 h-auto rounded-xl"
           >
             <Plus className="mr-2 h-5 w-5" /> Create New Room
           </Button>
@@ -346,7 +346,7 @@ const RoomManagement = () => {
               </p>
               <Button
                 onClick={() => setIsDialogOpen(true)}
-                className="bg-gradient-to-r from-blue-600 to-indigo-600 text-white hover:from-blue-700 hover:to-indigo-700"
+                className="bg-gradient-to-r from-purple-600 via-indigo-600 to-blue-600 text-white hover:from-blue-700 hover:to-indigo-700"
               >
                 <Plus className="mr-2 h-5 w-5" /> Create First Zone
               </Button>

@@ -1,6 +1,6 @@
 "use client"
 
-import { SquareTerminal, Bot, BookOpen, Settings2 } from "lucide-react"
+import {  Camera, User, UserPlus2Icon, PlusCircleIcon, BarChart2Icon } from "lucide-react"
 
 import {
   SidebarGroup,
@@ -14,23 +14,23 @@ const navMain = [
   {
     title: "Dashboard",
     url: "/admin/dashboard",
-    icon: SquareTerminal,
+    icon: BarChart2Icon,
     isActive: true,
   },
   {
-    title: "Camera",
+    title: "Survillance",
     url: "/admin/camera",
-    icon: Bot,
+    icon: Camera,
   },
   {
     title: "Add user",
     url: "/admin/adduser",
-    icon: BookOpen,
+    icon: UserPlus2Icon,
   },
   {
     title: "Add Room",
     url: "/admin/room",
-    icon: Settings2,
+    icon: PlusCircleIcon,
   },
 ]
 

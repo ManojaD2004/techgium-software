@@ -1,9 +1,10 @@
 import React from 'react'
+import EmployeeDashboard from './components/Productivity';
 
 const Page = () => {
   return (
     <div>
-      Hello 1
+      <EmployeeDashboard/>
     </div>
   )
 }
