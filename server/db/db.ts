@@ -1504,7 +1504,7 @@ class StatisticsDBv1 extends DB {
           const totalHours = parseFloat((totalTime / (60 * 60)).toFixed(2));
           const avgProd = parseFloat(
             (
-              (totalHours / ((totalRows * company.workHours) / 2)) *
+              (totalHours / ((totalRows * company.workHours))) *
               100
             ).toFixed(2)
           );
@@ -1603,7 +1603,7 @@ class StatisticsDBv1 extends DB {
           const totalHours = parseFloat((totalTime / (60 * 60)).toFixed(2));
           const prodHour = parseFloat(
             (
-              (totalHours / ((company.workHours * totalRows) / 2)) *
+              (totalHours / ((company.workHours * totalRows))) *
               100
             ).toFixed(2)
           );
