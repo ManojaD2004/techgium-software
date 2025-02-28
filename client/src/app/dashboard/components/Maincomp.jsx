@@ -81,72 +81,35 @@ export default function EmployeeDashboard() {
   const [apiData, setApiData] = useState(null);
 
   useEffect(() => {
-    const timer = setTimeout(() => {
-      setApiData({
-        employeeInfo: {
-          firstName: "Manoja",
-          lastName: "D",
-          phoneNo: "9902798895",
-          avatar: "/file/v1/image/242ad1.jpg",
-          status: "Active",
-        },
-        hoursWorkedData: [
-          { day: "Thu", "This Week": 15.36, "Last Week": 13.37 },
-          { day: "Fri", "This Week": 9.55, "Last Week": 14.11 },
-          { day: "Sat", "This Week": 13.76, "Last Week": 10.28 },
-          { day: "Sun", "This Week": 10.18, "Last Week": 17.73 },
-          { day: "Mon", "This Week": 11.82, "Last Week": 13.16 },
-          { day: "Tue", "This Week": 14.41, "Last Week": 13.01 },
-          { day: "Wed", "This Week": 13.36, "Last Week": 13.7 },
-        ],
-        departmentHoursData: [
-          { name: "CS Lab", hours: 660.16 },
-          { name: "Cafeteria", hours: 628.86 },
-          { name: "AIML Lab", hours: 658.84 },
-          { name: "Research Department", hours: 678.49 },
-        ],
-        topPerformers: [
+    const fetchData = async () => {
+      try {
+        setLoading(true);
+        const response = await fetch(
+          `${API_LINK}/user/v1/statistics/dashboard/employee`,
           {
-            empId: 14,
-            name: "Rahul S",
-            hours: 398.67,
-            productivity: 39.55,
-            avatar: "/file/v1/image/f16f3f.jpg",
-            increase: -11.25,
-          },
-          {
-            empId: 7,
-            name: "Manoja D",
-            hours: 394.38,
-            productivity: 39.13,
-            avatar: "/file/v1/image/242ad1.jpg",
-            increase: -7.27,
-          },
-          {
-            empId: 15,
-            name: "Giridhar D",
-            hours: 389.26,
-            productivity: 38.62,
-            avatar: "/file/v1/image/2ddb6c.jpg",
-            increase: 6.64,
-          },
-        ],
-        skillMatrixData: [
-          { subject: "Wed", A: 14.05, B: 13.36, fullMark: 8 },
-          { subject: "Tue", A: 12.05, B: 14.41, fullMark: 8 },
-          { subject: "Mon", A: 10.92, B: 11.82, fullMark: 8 },
-          { subject: "Sun", A: 11.01, B: 10.18, fullMark: 8 },
-          { subject: "Sat", A: 12.07, B: 13.76, fullMark: 8 },
-          { subject: "Fri", A: 10.98, B: 9.55, fullMark: 8 },
-          { subject: "Thu", A: 13.16, B: 15.36, fullMark: 8 },
-        ],
-        basicInfo: {
-          totalHours: 394.38,
-          averageProductivy: 74.69,
-        },
-      });
-    }, 2000);
-    return () => clearTimeout(timer);
+            method: "GET",
+            credentials: "include",
+            headers: {
+              "Content-Type": "application/json",
+              "ngrok-skip-browser-warning": "true",
+            },
+          }
+        );
+        const data = await response.json();
+        if (!response.ok) {
+          toast.error("Failed to fetch!!!");
+          setLoading(false);
+          return;
+        }
+        setApiData(data.data);
+        setLoading(false);
+      } catch (error) {
+        toast.error("Error fetching data!!!");
+        console.log(error);
+      }
+    };
+
+    fetchData();
   }, []);
 
   if (!apiData) {

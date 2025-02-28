@@ -202,7 +202,38 @@ function UserLoginForm({ isOpen, onClose }) {
   const handleSubmit = async (e) => {
     e.preventDefault();
     setIsLoading(true);
-    router.push('/dashboard')
+    setError("");
+
+    try {
+      console.log(username);
+      console.log(password);
+      const userName = username;
+
+      const response = await fetch(`${API_LINK}/user/v1/login/employee`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "ngrok-skip-browser-warning": "true",
+        },
+        credentials: "include",
+
+        body: JSON.stringify({ userName, password }),
+      });
+
+      const data = await response.json();
+      console.log(data);
+
+      if (!response.ok) {
+        toast.error(data.message || "Login failed");
+        return;
+      }
+
+      router.push("/dashboard");
+    } catch (err) {
+      setError(err.message || "Failed to login. Please try again.");
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   return (
