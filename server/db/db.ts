@@ -385,6 +385,38 @@ class UserDBv1 extends DB {
       }
     });
   }
+  async verifyEmployeeUser(userName: string, password: string) {
+    return await this.retryQuery("verifyEmployeeUser", async () => {
+      let pClient;
+      try {
+        pClient = await this.connect();
+        const res = await pClient.query(
+          `
+          SELECT "id" FROM "users" WHERE
+          "user_name" = $1::varchar AND "password" = $2::varchar AND "type" = 'employee';`,
+          [userName, password]
+        );
+        if (res.rowCount !== 1) {
+          return -1;
+        }
+        const userData = {
+          primaryId: res.rows[0].id as number,
+        };
+        return userData;
+      } catch (error: any) {
+        console.log(
+          chalk.red("PostgresSQL Error: "),
+          error?.message,
+          error?.code
+        );
+        return null;
+      } finally {
+        if (pClient) {
+          this.release(pClient);
+        }
+      }
+    });
+  }
 }
 
 class TrackerDBv1 extends DB {
@@ -1728,9 +1760,7 @@ class StatisticsDBv1 extends DB {
           for (const row1 of resWeek.rows) {
             const totalRows = parseInt(row1["total_rows"]);
             const totalTime = parseInt(row1["total_time"]);
-            const totalHours = parseFloat(
-              (totalTime / (60 * 60)).toFixed(2)
-            );
+            const totalHours = parseFloat((totalTime / (60 * 60)).toFixed(2));
             A += totalHours;
             B = totalHours;
           }
@@ -2052,9 +2082,7 @@ class StatisticsDBv1 extends DB {
           for (const row1 of resWeek.rows) {
             const totalRows = parseInt(row1["total_rows"]);
             const totalTime = parseInt(row1["total_time"]);
-            const totalHours = parseFloat(
-              (totalTime / (60 * 60)).toFixed(2)
-            );
+            const totalHours = parseFloat((totalTime / (60 * 60)).toFixed(2));
             A += totalHours;
           }
           const weekDay = new Date(date1).getDay();
@@ -2075,9 +2103,7 @@ class StatisticsDBv1 extends DB {
           }
           const totalRows = parseInt(resWeek1.rows[0]["total_rows"]);
           const totalTime = parseInt(resWeek1.rows[0]["total_time"]);
-          const totalHours = parseFloat(
-            (totalTime / (60 * 60)).toFixed(2)
-          );
+          const totalHours = parseFloat((totalTime / (60 * 60)).toFixed(2));
           B = totalHours;
           const hourWeekObj = {
             subject: daysOfWeek[weekDay],
@@ -2109,7 +2135,7 @@ class StatisticsDBv1 extends DB {
       }
     });
   }
-  async getNoti(userId: number) {
+  async getNoti(userId?: number) {
     return await this.retryQuery("getNoti", async () => {
       let pClient;
       try {
@@ -2123,8 +2149,7 @@ class StatisticsDBv1 extends DB {
           "type"
          FROM "notifications"
          WHERE "user_id" = $1::int
-         ORDER BY "timestamp" DESC;`,
-          [userId]
+         ORDER BY "timestamp" DESC;`
         );
         const notiData = res.rows;
         return notiData;

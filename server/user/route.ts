@@ -38,13 +38,24 @@ const { INTERVAL_SEC } = pythonConfigs;
 
 v1Routes.post("/login/employee", async (req, res) => {
   try {
-    const { clerkId }: ClerkInfo = req.body;
-    if (!clerkId) {
+    const { userName, password }: { userName: string; password: string } =
+      req.body;
+    const userDb = new UserDBv1();
+    const verify = await userDb.verifyEmployeeUser(userName, password);
+    if (verify === null) {
       res.status(400).send({
         status: "fail",
         data: {
-          message: "Didnt get clerk userId, please login in!",
-          redirectPage: "/sign-in",
+          message: "PostgresSQL Database is offline, please try again later!",
+        },
+      });
+      return;
+    }
+    if (verify === -1) {
+      res.status(400).send({
+        status: "fail",
+        data: {
+          message: "Wrong username and password!",
         },
       });
       return;
@@ -53,11 +64,11 @@ v1Routes.post("/login/employee", async (req, res) => {
     const sessionDb = new SessionDB();
     const sessionId = v4();
     let sessionIdRes: SessionId = await mClient.getSessionByClerkUserId(
-      clerkId
+      userName
     );
     if (!sessionIdRes || sessionIdRes === -1) {
       let sessionIdResDb: SessionId = await sessionDb.getSessionIdByAuthId(
-        clerkId
+        userName
       );
       if (!sessionIdResDb) {
         res.status(400).send({
@@ -72,10 +83,10 @@ v1Routes.post("/login/employee", async (req, res) => {
       }
       if (sessionIdResDb === -1) {
         sessionIdResDb = await sessionDb.createSessionIdByAuthId(
-          clerkId,
+          userName,
           sessionId
         );
-        await mClient.createSessionByClerkUserId(clerkId, sessionId);
+        await mClient.createSessionByClerkUserId(userName, sessionId);
       }
       if (!sessionIdResDb) {
         res.status(400).send({
@@ -108,7 +119,15 @@ v1Routes.post("/login/employee", async (req, res) => {
       sameSite: "none",
       maxAge: 1000 * 60 * 60 * 24 * SESSION_EXPIRE_TIME_IN_DAYS,
     });
-    res.cookie("authId", clerkId, {
+    res.cookie("authId", userName, {
+      httpOnly: true,
+      secure: true,
+      signed: true,
+      path: "/",
+      sameSite: "none",
+      maxAge: 1000 * 60 * 60 * 24 * SESSION_EXPIRE_TIME_IN_DAYS,
+    });
+    res.cookie("userId", verify.primaryId, {
       httpOnly: true,
       secure: true,
       signed: true,
@@ -122,7 +141,7 @@ v1Routes.post("/login/employee", async (req, res) => {
         sessionId: sessionIdRes,
       },
     });
-    console.log(chalk.yellow(`User: ${clerkId}, is logged in!`));
+    console.log(chalk.yellow(`User: ${userName}, is logged in!`));
   } catch (error: any) {
     console.log(chalk.red(`Error: ${error?.message}.`));
     res.status(400).send({
@@ -1418,7 +1437,7 @@ trackRouter.get("/noti", async (req, res) => {
           empIds.length > mainRoomData[roomId].maxCap ? "exceeded" : "normal",
       });
     }
-    const noti = await statsDb.getNoti(parseInt(userId));
+    const noti = await statsDb.getNoti();
     res.status(200).send({
       status: "success",
       data: {
@@ -1500,12 +1519,21 @@ statisticsRouter.get("/dashboard", async (req, res) => {
   }
 });
 
-statisticsRouter.get("/dashboard/:empid", async (req, res) => {
+statisticsRouter.get("/dashboard/employee", async (req, res) => {
   try {
+    const { userId }: Cookies = req.signedCookies;
+    if (!userId) {
+      res.status(400).send({
+        status: "fail",
+        data: {
+          message: "Didnt find cookies, please login in!",
+          redirectPage: "/sign-in",
+        },
+      });
+      return;
+    }
     const statisticsDb = new StatisticsDBv1();
-    const resDb = await statisticsDb.getDashboardByUserId(
-      parseInt(req.params.empid)
-    );
+    const resDb = await statisticsDb.getDashboardByUserId(parseInt(userId));
     if (resDb === -1 || resDb === null) {
       res.status(400).send({
         status: "fail",
