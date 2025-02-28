@@ -1354,7 +1354,10 @@ class MiscDB extends DB {
       let pClient;
       try {
         pClient = await this.connect();
-
+        const company = getCompanyMetadata();
+        if (company === null) {
+          return null;
+        }
         await pClient.query("BEGIN");
         const res = await pClient.query(
           `
@@ -1370,9 +1373,32 @@ class MiscDB extends DB {
         }
         const empRooms: any = res.rows;
         const past = 31;
+        const totalRoomsByEmpid: { [empId: number]: number } = {};
         for (const empRoom of empRooms) {
           for (let i = 1; i <= past; i++) {
-            const totalHoursInOneDay = randNum(1, 3);
+            let minRand = 0;
+            let maxRand = 0;
+            if (!(parseInt(empRoom["employee_id"]) in totalRoomsByEmpid)) {
+              const res1 = await pClient.query(
+                `
+                SELECT 
+                COUNT(re."room_id") as "total_rooms"
+                FROM "room_employee" as re
+                WHERE re."employee_id" = $1::int;`
+              );
+              if (res1.rowCount !== 1) {
+                await pClient.query("ROLLBACK");
+                return -1;
+              }
+              totalRoomsByEmpid[parseInt(empRoom["employee_id"])] = parseInt(
+                res1.rows[0]["total_rooms"]
+              );
+            }
+            maxRand =
+              company.workHours /
+              totalRoomsByEmpid[parseInt(empRoom["employee_id"])];
+            minRand = maxRand / 2;
+            const totalHoursInOneDay = randNum(minRand, maxRand);
             const timeInSeconds = Math.round(totalHoursInOneDay * 60 * 60);
             const resData = await pClient.query(
               `
