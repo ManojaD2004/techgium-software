@@ -1,5 +1,5 @@
 "use client";
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import {
   Card,
   CardContent,
@@ -7,7 +7,6 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
@@ -40,59 +39,7 @@ import {
   Calendar as CalendarIcon,
   Phone,
 } from "lucide-react";
-
-const hoursWorkedData = [
-  { day: "Mon", "This Week": 45, "Last Week": 40 },
-  { day: "Tue", "This Week": 48, "Last Week": 42 },
-  { day: "Wed", "This Week": 47, "Last Week": 45 },
-  { day: "Thu", "This Week": 49, "Last Week": 44 },
-  { day: "Fri", "This Week": 45, "Last Week": 40 },
-  { day: "Sat", "This Week": 35, "Last Week": 30 },
-  { day: "Sun", "This Week": 25, "Last Week": 20 },
-];
-
-const departmentHoursData = [
-  { name: "Room1", hours: 92 },
-  { name: "Room2", hours: 42 },
-  { name: "Room3", hours: 38 },
-];
-
-const topPerformers = [
-  { id: 1, name: "Alex Johnson", productivity: 94, increase: "+12%" },
-  { id: 3, name: "Michael Chen", productivity: 92, increase: "+8%" },
-  { id: 5, name: "David Kim", productivity: 90, increase: "+5%" },
-];
-
-
-const skillMatrixData = [
-  { subject: "Coding", A: 120, B: 110, fullMark: 150 },
-  { subject: "Communication", A: 98, B: 130, fullMark: 150 },
-  { subject: "Teamwork", A: 86, B: 130, fullMark: 150 },
-  { subject: "Problem Solving", A: 99, B: 100, fullMark: 150 },
-  { subject: "Time Management", A: 85, B: 90, fullMark: 150 },
-  { subject: "Technical Knowledge", A: 65, B: 85, fullMark: 150 },
-];
-
-const employeeInfo = {
-  firstName: "Ava",
-  lastName:"Adam",
-  role: "Senior Software Engineer",
-  status: "Active",
-  room: "CS Lab",
-  phone: "9902798895",
-  imgURL:
-    "https://images.unsplash.com/photo-1438761681033-6461ffad8d80?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=1470&q=80",
-};
-
-const basicInfo={
-  totalHours:"123",
-  totalHoursPerc:"12%",
-  averageProductivy:"89%",
-  averageProductivyPerc:"-5%"
-
-}
-
-// Project contribution data
+import API_LINK from "@/app/backendLink/link";
 
 const COLORS = [
   "#0088FE",
@@ -104,7 +51,6 @@ const COLORS = [
 ];
 const RADIAN = Math.PI / 180;
 
-// Custom label for pie chart
 const renderCustomizedLabel = ({
   cx,
   cy,
@@ -112,7 +58,6 @@ const renderCustomizedLabel = ({
   innerRadius,
   outerRadius,
   percent,
-  index,
 }) => {
   const radius = innerRadius + (outerRadius - innerRadius) * 0.5;
   const x = cx + radius * Math.cos(-midAngle * RADIAN);
@@ -132,10 +77,89 @@ const renderCustomizedLabel = ({
 };
 
 export default function EmployeeDashboard() {
-  const [timeRange, setTimeRange] = useState("week");
+  const [timeRange] = useState("week");
+  const [apiData, setApiData] = useState(null);
+
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setApiData({
+        employeeInfo: {
+          firstName: "Manoja",
+          lastName: "D",
+          phoneNo: "9902798895",
+          avatar: "/file/v1/image/242ad1.jpg",
+          status: "Active",
+        },
+        hoursWorkedData: [
+          { day: "Thu", "This Week": 15.36, "Last Week": 13.37 },
+          { day: "Fri", "This Week": 9.55, "Last Week": 14.11 },
+          { day: "Sat", "This Week": 13.76, "Last Week": 10.28 },
+          { day: "Sun", "This Week": 10.18, "Last Week": 17.73 },
+          { day: "Mon", "This Week": 11.82, "Last Week": 13.16 },
+          { day: "Tue", "This Week": 14.41, "Last Week": 13.01 },
+          { day: "Wed", "This Week": 13.36, "Last Week": 13.7 },
+        ],
+        departmentHoursData: [
+          { name: "CS Lab", hours: 660.16 },
+          { name: "Cafeteria", hours: 628.86 },
+          { name: "AIML Lab", hours: 658.84 },
+          { name: "Research Department", hours: 678.49 },
+        ],
+        topPerformers: [
+          {
+            empId: 14,
+            name: "Rahul S",
+            hours: 398.67,
+            productivity: 39.55,
+            avatar: "/file/v1/image/f16f3f.jpg",
+            increase: -11.25,
+          },
+          {
+            empId: 7,
+            name: "Manoja D",
+            hours: 394.38,
+            productivity: 39.13,
+            avatar: "/file/v1/image/242ad1.jpg",
+            increase: -7.27,
+          },
+          {
+            empId: 15,
+            name: "Giridhar D",
+            hours: 389.26,
+            productivity: 38.62,
+            avatar: "/file/v1/image/2ddb6c.jpg",
+            increase: 6.64,
+          },
+        ],
+        skillMatrixData: [
+          { subject: "Wed", A: 14.05, B: 13.36, fullMark: 8 },
+          { subject: "Tue", A: 12.05, B: 14.41, fullMark: 8 },
+          { subject: "Mon", A: 10.92, B: 11.82, fullMark: 8 },
+          { subject: "Sun", A: 11.01, B: 10.18, fullMark: 8 },
+          { subject: "Sat", A: 12.07, B: 13.76, fullMark: 8 },
+          { subject: "Fri", A: 10.98, B: 9.55, fullMark: 8 },
+          { subject: "Thu", A: 13.16, B: 15.36, fullMark: 8 },
+        ],
+        basicInfo: {
+          totalHours: 394.38,
+          averageProductivy: 74.69,
+        },
+      });
+    }, 2000);
+    return () => clearTimeout(timer);
+  }, []);
+
+  if (!apiData) {
+    return (
+      <div className="p-6 flex items-center justify-center min-h-screen">
+        <div className="animate-pulse text-gray-500">Loading dashboard...</div>
+      </div>
+    );
+  }
 
   return (
     <div className="p-6 bg-gradient-to-br from-gray-50 to-blue-50 min-h-screen">
+      {/* Header Section */}
       <div className="flex flex-col lg:flex-row items-start lg:items-center justify-between mb-8 gap-4">
         <div>
           <h1 className="text-3xl font-bold text-gray-800">
@@ -156,38 +180,30 @@ export default function EmployeeDashboard() {
       <Card className="border-none shadow-lg mb-8 bg-gradient-to-r from-blue-50 to-purple-50 hover:shadow-xl transition-shadow">
         <CardContent className="p-6">
           <div className="flex items-center space-x-6">
-            {/* Avatar with online image */}
             <Avatar className="h-20 w-20 border-2 border-white shadow-md">
               <img
-                src={employeeInfo.imgURL}
-                alt={`${employeeInfo.firstName}'s Avatar`}
+                src={`${API_LINK}${apiData.employeeInfo.avatar}`}
+                alt={`${apiData.employeeInfo.firstName}'s Avatar`}
                 className="object-cover"
               />
-              <AvatarFallback className="bg-gradient-to-r from-blue-600 to-purple-600 text-white">
-                {employeeInfo.firstName
-                  .split(" ")
-                  .map((n) => n[0])
-                  .join("")}
-              </AvatarFallback>
             </Avatar>
-
-            {/* Employee Details */}
             <div className="space-y-1.5">
               <h2 className="text-2xl font-bold text-gray-800">
-                {employeeInfo.firstName} {employeeInfo.lastName}
+                {apiData.employeeInfo.firstName} {apiData.employeeInfo.lastName}
               </h2>
-              <p className="text-gray-600 text-sm">{employeeInfo.role}</p>
               <div className="flex items-center space-x-3">
                 <Badge
                   variant="outline"
                   className="bg-green-100 border-green-200 text-green-800"
                 >
                   <div className="h-2 w-2 rounded-full bg-green-500 mr-2"></div>
-                  {employeeInfo.status} - {employeeInfo.room}
+                  {apiData.employeeInfo.status}
                 </Badge>
                 <div className="flex items-center space-x-2 text-gray-500">
                   <Phone className="h-4 w-4" />
-                  <span className="text-sm">{employeeInfo.phone}</span>
+                  <span className="text-sm">
+                    {apiData.employeeInfo.phoneNo}
+                  </span>
                 </div>
               </div>
             </div>
@@ -202,11 +218,9 @@ export default function EmployeeDashboard() {
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm font-medium text-gray-500">Total Hours</p>
-                <h3 className="text-2xl font-bold mt-1">{basicInfo.totalHours} hrs</h3>
-                <p className="text-xs text-green-500 mt-1 flex items-center">
-                  <ChevronsUpDown className="h-4 w-4 mr-1" />
-                  {basicInfo.totalHoursPerc} from last {timeRange}
-                </p>
+                <h3 className="text-2xl font-bold mt-1">
+                  {apiData.basicInfo.totalHours} hrs
+                </h3>
               </div>
               <div className="h-12 w-12 bg-blue-100 rounded-full flex items-center justify-center">
                 <Clock className="h-6 w-6 text-blue-600" />
@@ -222,11 +236,9 @@ export default function EmployeeDashboard() {
                 <p className="text-sm font-medium text-gray-500">
                   Avg. Productivity
                 </p>
-                <h3 className="text-2xl font-bold mt-1">{basicInfo.averageProductivy}</h3>
-                <p className="text-xs text-green-500 mt-1 flex items-center">
-                  <ChevronsUpDown className="h-4 w-4 mr-1" />
-                  {basicInfo.averageProductivyPerc} from last {timeRange}
-                </p>
+                <h3 className="text-2xl font-bold mt-1">
+                  {apiData.basicInfo.averageProductivy}%
+                </h3>
               </div>
               <div className="h-12 w-12 bg-green-100 rounded-full flex items-center justify-center">
                 <TrendingUp className="h-6 w-6 text-green-600" />
@@ -241,13 +253,11 @@ export default function EmployeeDashboard() {
         <Card className="lg:col-span-2 border-none shadow-lg">
           <CardHeader>
             <CardTitle>Hours Worked Comparison</CardTitle>
-            <CardDescription>
-              This {timeRange} vs last {timeRange}
-            </CardDescription>
+            <CardDescription>This week vs last week</CardDescription>
           </CardHeader>
           <CardContent>
             <ResponsiveContainer width="100%" height={300}>
-              <LineChart data={hoursWorkedData}>
+              <LineChart data={apiData.hoursWorkedData}>
                 <CartesianGrid strokeDasharray="3 3" />
                 <XAxis dataKey="day" />
                 <YAxis />
@@ -274,13 +284,13 @@ export default function EmployeeDashboard() {
         <Card className="border-none shadow-lg">
           <CardHeader>
             <CardTitle>Hours by Department</CardTitle>
-            <CardDescription>Total hours this {timeRange}</CardDescription>
+            <CardDescription>Total hours this week</CardDescription>
           </CardHeader>
           <CardContent>
             <ResponsiveContainer width="100%" height={300}>
               <PieChart>
                 <Pie
-                  data={departmentHoursData}
+                  data={apiData.departmentHoursData}
                   cx="50%"
                   cy="50%"
                   labelLine={false}
@@ -289,7 +299,7 @@ export default function EmployeeDashboard() {
                   dataKey="hours"
                   label={renderCustomizedLabel}
                 >
-                  {departmentHoursData.map((entry, index) => (
+                  {apiData.departmentHoursData.map((entry, index) => (
                     <Cell
                       key={`cell-${index}`}
                       fill={COLORS[index % COLORS.length]}
@@ -304,7 +314,7 @@ export default function EmployeeDashboard() {
         </Card>
       </div>
 
-      {/* New: Team Skill Matrix Section */}
+      {/* Team Skill Matrix Section */}
       <Card className="border-none shadow-lg mb-8">
         <CardHeader>
           <CardTitle>Team Skill Matrix</CardTitle>
@@ -314,19 +324,19 @@ export default function EmployeeDashboard() {
         </CardHeader>
         <CardContent>
           <ResponsiveContainer width="100%" height={400}>
-            <RadarChart outerRadius={150} data={skillMatrixData}>
+            <RadarChart outerRadius={150} data={apiData.skillMatrixData}>
               <PolarGrid />
               <PolarAngleAxis dataKey="subject" />
               <PolarRadiusAxis />
               <Radar
-                name="Top Performer"
+                name="This Week"
                 dataKey="A"
                 stroke="#8884d8"
                 fill="#8884d8"
                 fillOpacity={0.6}
               />
               <Radar
-                name="Team Average"
+                name="Last Week"
                 dataKey="B"
                 stroke="#82ca9d"
                 fill="#82ca9d"
@@ -339,24 +349,27 @@ export default function EmployeeDashboard() {
         </CardContent>
       </Card>
 
-      {/* Top Performers Section with enhanced UI */}
+      {/* Top Performers Section */}
       <Card className="border-none shadow-lg mb-8">
         <CardHeader>
           <CardTitle>Top Performers Spotlight</CardTitle>
-          <CardDescription>
-            Highest productivity this {timeRange}
-          </CardDescription>
+          <CardDescription>Highest productivity this week</CardDescription>
         </CardHeader>
         <CardContent>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-            {topPerformers.map((employee, index) => (
+            {apiData.topPerformers.map((employee, index) => (
               <div
-                key={employee.id}
+                key={employee.empId}
                 className="bg-white rounded-lg p-6 shadow-md border border-gray-100"
               >
                 <div className="flex flex-col items-center text-center">
                   <div className="relative">
                     <Avatar className="h-20 w-20 mb-4">
+                      {/* <img
+                        src={`${API_LINK}${employee.avatar}`}
+                        alt={employee.name}
+                        className="object-cover"
+                      /> */}
                       <AvatarFallback className="bg-blue-100 text-blue-800 text-xl">
                         {employee.name
                           .split(" ")
@@ -373,13 +386,6 @@ export default function EmployeeDashboard() {
                     )}
                   </div>
                   <h3 className="font-semibold text-lg">{employee.name}</h3>
-                  <p className="text-gray-500 text-sm mb-2">
-                    {index === 0
-                      ? "Frontend Developer"
-                      : index === 1
-                      ? "Backend Developer"
-                      : "Data Analyst"}
-                  </p>
                   <div className="w-full mb-2">
                     <div className="flex justify-between text-sm mb-1">
                       <span>Productivity</span>

@@ -4,9 +4,10 @@ import { Card, CardContent, CardFooter, CardHeader, CardTitle } from '@/componen
 import { Button } from '@/components/ui/button';
 import { Camera, Eye, RefreshCw, Play, Square, ChevronDown, ChevronUp } from 'lucide-react';
 import { useRouter } from 'next/navigation';
-import { toast } from 'sonner';
+
 import API_LINK from '@/app/backendLink/link';
 import Notification from './Notification';
+import toast from 'react-hot-toast';
 
 const CameraDashboard = () => {
   const [cameraData, setCameraData] = useState(null);
@@ -69,26 +70,19 @@ const CameraDashboard = () => {
       });
       
       if (response.ok) {
-        toast.success("Tracking Started", {
-          description: "Camera tracking has been initiated successfully.",
-          className:"bg-white text-black"
-        });
+        toast.success("Tracking started")
         
         // Refetch cameras after starting tracking
         fetchCameras();
       } else {
         setError("Failed to start tracking");
         setLoading(false);
-        toast.error("Failed to start tracking", {
-          description: "Please try again or check the server status."
-        });
+        toast.error("Failed to start tracking");
       }
     } catch (err) {
       setError("An error occurred while starting tracking");
       setLoading(false);
-      toast.error("Connection Error", {
-        description: "Could not connect to the tracking server."
-      });
+      toast.error("Connection Error");
     }
   };
 
@@ -105,24 +99,18 @@ const CameraDashboard = () => {
       });
       
       if (response.ok) {
-        toast.success("Tracking Stopped", {
-          description: "Camera tracking has been stopped successfully."
-        });
+        toast.success("Tracking Stopped");
         
         window.location.reload();
       } else {
         setError("Failed to stop tracking");
         setLoading(false);
-        toast.error("Failed to stop tracking", {
-          description: "Please try again or check the server status."
-        });
+        toast.error("Failed to stop tracking");
       }
     } catch (err) {
       setError("An error occurred while stopping tracking");
       setLoading(false);
-      toast.error("Connection Error", {
-        description: "Could not connect to the tracking server."
-      });
+      toast.error("Connection Error");
     }
   };
 
