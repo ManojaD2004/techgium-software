@@ -1143,6 +1143,8 @@ trackRouter.post("/start", async (req, res) => {
         { encoding: "utf8" }
       );
       const commandList = ["docker", "run"];
+      const pyFileName =
+        camera.modelName === "hog" ? "main_video2.py" : "main_logic2.py";
       commandList.push(
         "-p",
         `${camera.port}:5222`,
@@ -1163,7 +1165,7 @@ trackRouter.post("/start", async (req, res) => {
         "PYTHONUNBUFFERED=1",
         "model-py",
         "python",
-        "main_video2.py"
+        pyFileName
       );
       commandList.push(
         `/app/model_data/${camera.roomId}-${camera.cameraId}.json`,

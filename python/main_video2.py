@@ -1,9 +1,12 @@
 import cv2
 import numpy as np
 import threading
+import sys
+import json
 import time
 from flask import Flask, Response, render_template_string
-from simple_facerec import SimpleFacerec
+from simple_facerec2 import SimpleFacerec
+
 
 class ThreadedVideoStream:
     def __init__(self, src):
@@ -41,9 +44,12 @@ class ThreadedVideoStream:
         self.stopped = True
         self.cap.release()
 
+
 latest_face_locations = []
 latest_face_names = []
 detection_lock = threading.Lock()
+
+c = {}
 
 
 def detection_worker(sfr, video_stream, detection_interval=0.5):
@@ -59,7 +65,9 @@ def detection_worker(sfr, video_stream, detection_interval=0.5):
             latest_face_names = face_names
         time.sleep(detection_interval)
 
+
 app = Flask(__name__)
+
 
 def generate_frames(sfr, video_stream):
     while True:
@@ -70,52 +78,102 @@ def generate_frames(sfr, video_stream):
         with detection_lock:
             face_locations = latest_face_locations.copy()
             face_names = latest_face_names.copy()
-        
+
         for face_loc, name in zip(face_locations, face_names):
             y1, x2, y2, x1 = face_loc
+            if name == "Unknown":
+                cv2.rectangle(frame, (x1, y1), (x2, y2), (0, 0, 200), 2)
+                cv2.putText(
+                    frame, name, (x1, y1 - 10), cv2.FONT_HERSHEY_DUPLEX, 0.8, (0, 0, 200), 2
+                )
+                continue
+            textToDisplay = c[name]["empName"]
             cv2.rectangle(frame, (x1, y1), (x2, y2), (0, 0, 200), 2)
-            cv2.putText(frame, name, (x1, y1 - 10),
-                        cv2.FONT_HERSHEY_DUPLEX, 0.8, (0, 0, 200), 2)
-        
-        head_count = len(face_locations)
-        cv2.putText(frame, f"Head Count: {head_count}", (10, 30),
-                    cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 255, 0), 2)
+            cv2.putText(
+                frame,
+                textToDisplay,
+                (x1, y1 - 10),
+                cv2.FONT_HERSHEY_DUPLEX,
+                0.8,
+                (0, 0, 200),
+                2,
+            )
 
-        ret, buffer = cv2.imencode('.jpg', frame)
+        head_count = len(face_locations)
+        cv2.putText(
+            frame,
+            f"Head Count: {head_count}",
+            (10, 30),
+            cv2.FONT_HERSHEY_SIMPLEX,
+            1,
+            (0, 255, 0),
+            2,
+        )
+
+        ret, buffer = cv2.imencode(".jpg", frame)
         if not ret:
             continue
         frame_bytes = buffer.tobytes()
 
-        yield (b'--frame\r\n'
-               b'Content-Type: image/jpeg\r\n\r\n' + frame_bytes + b'\r\n')
+        yield (
+            b"--frame\r\n" b"Content-Type: image/jpeg\r\n\r\n" + frame_bytes + b"\r\n"
+        )
+
+
+HTML_PAGE = """
+<html>
+  <head>
+    <title>Live Camera</title>
+  </head>
+  <body>
+    <img src="{{ url_for('video_feed') }}" width="800">
+  </body>
+</html>
+"""
+
+
+@app.route("/")
+def index():
+    return render_template_string(HTML_PAGE)
+
 
 @app.route("/video_feed")
 def video_feed():
-    return Response(generate_frames(app.config["sfr"], app.config["video_stream"]),
-                    mimetype='multipart/x-mixed-replace; boundary=frame')
+    return Response(
+        generate_frames(app.config["sfr"], app.config["video_stream"]),
+        mimetype="multipart/x-mixed-replace; boundary=frame",
+    )
 
 
-def update_json():
+def update_json(roomId, cameraId, interval_sec):
     """Background task to write face detection data to JSON every 5 seconds."""
     while True:
-        print("in")
         face_data = {
-            "face_detected": len(latest_face_locations) > 0,
+            "faceDetected": len(latest_face_locations) > 0,
             "timestamp": time.time(),
-            "head_count": len(latest_face_locations),
-            "faces": latest_face_names,
+            "headCount": len(latest_face_locations),
+            "empIds": latest_face_names,
+            "roomId": roomId,
+            "cameraId": cameraId,
         }
-        # with open("output.json", "w") as f:
-        #     json.dump(face_data, f)
-
-        print("JSON updated:", face_data)  # Optional log
-        time.sleep(10)  # Async non-blocking delay
+        print(json.dumps(face_data), flush=True)
+        time.sleep(interval_sec)
 
 
 def main():
+    print(sys.argv)
+    with open(sys.argv[1], "r") as file1:
+        data1 = json.load(file1)
+    # a = json.loads(data1)
+    print(data1)
+    global c
+    c = data1
     sfr = SimpleFacerec()
-    sfr.load_encoding_images("images/")
-    stream_url = "http://192.168.1.7:4747/video"
+    sfr.load_encoding_images(c)
+    stream_url = sys.argv[2]
+    room_id = sys.argv[3]
+    camera_id = sys.argv[4]
+    interval_sec = int(sys.argv[5])
     try:
         video_stream = ThreadedVideoStream(stream_url).start()
     except Exception as e:
@@ -124,9 +182,13 @@ def main():
 
     time.sleep(2.0)
 
-    detection_thread = threading.Thread(target=detection_worker, args=(sfr, video_stream, 0.5), daemon=True)
-    detection_thread.start()
-    json_thread = threading.Thread(target=update_json, args=(), daemon=True)
+    # detection_thread = threading.Thread(
+    #     target=detection_worker, args=(sfr, video_stream, 0.5), daemon=True
+    # )
+    # detection_thread.start()
+    json_thread = threading.Thread(
+        target=update_json, args=(room_id, camera_id, interval_sec), daemon=True
+    )
     json_thread.start()
 
     app.config["sfr"] = sfr

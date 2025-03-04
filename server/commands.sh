@@ -9,7 +9,7 @@ docker run -p 6379:6379 -it --rm  -v cache-data:/data test-redis
 docker run -it --rm --network host -e PGPASSWORD='techgium' postgres psql -h localhost -U postgres -d techgium
 
 # Run Docker Compose
-docker compose -f ./docker/docker-compose.yml up --build
+docker compose -f ./docker/docker-compose.yml -p techgium up --build
 
 docker compose -p test -f docker-compose.test.yml  up
 

@@ -2174,7 +2174,6 @@ class StatisticsDBv1 extends DB {
           "created_at" as "timestamp",
           "type"
          FROM "notifications"
-         WHERE "user_id" = $1::int
          ORDER BY "timestamp" DESC;`
         );
         const notiData = res.rows;
