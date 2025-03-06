@@ -142,7 +142,7 @@ const CameraDashboard = () => {
   const camerasByRoom = groupCamerasByRoom();
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-900 to-slate-800 p-6 w-[1150px]">
+    <div className="min-h-screen bg-gradient-to-br from-slate-900 to-slate-800 p-6 w-[1450px]">
       <div className="max-w-6xl mx-auto">
         <div className="flex justify-between items-center mb-8">
           <h1 className="text-3xl font-bold text-white">Security Camera Dashboard</h1>
@@ -253,7 +253,7 @@ const CameraDashboard = () => {
                           <CardFooter className="p-4 flex-col bg-slate-800 gap-2">
                             <div className="flex justify-between items-center w-full">
                               <div className="text-sm text-slate-300">
-                                IP: {camera.ip.split('//')[1]}
+                                IP: {camera.ip}
                               </div>
                               <Button 
                                 variant="ghost" 

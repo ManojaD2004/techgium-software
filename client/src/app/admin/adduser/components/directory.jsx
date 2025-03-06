@@ -227,7 +227,7 @@ export default function EmployeeDirectory() {
 
   return (
     <div className="flex items-center justify-center min-h-screen w-full">
-      <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-purple-50 min-w-[1100px]">
+      <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-purple-50 min-w-[1450px]">
         <div className="container mx-auto px-4 py-12">
           <div className="flex flex-col md:flex-row justify-between items-center mb-16 gap-6">
             <div>

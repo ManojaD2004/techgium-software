@@ -1175,6 +1175,7 @@ trackRouter.post("/start", async (req, res) => {
         `${INTERVAL_SEC}`
       );
       // console.log(commandList[0], commandList.slice(1));
+      // console.log(commandList.join(" "));
       console.log(
         chalk.yellowBright(
           `Running docker container for camera: ${camera.cameraName}, cameraId: ${camera.cameraId}...`
@@ -1183,8 +1184,10 @@ trackRouter.post("/start", async (req, res) => {
       const modelJob = spawn(commandList[0], commandList.slice(1));
       modelJob.stdout.on("data", async (data) => {
         const data1 = data.toString() as string;
+        // console.log(data1);
         try {
           const jsonData: JsonOutputJob = JSON.parse(data1);
+          console.log(jsonData);
           const cameras = roomCamera[jsonData.roomId];
           cameras[jsonData.cameraId] = jsonData;
         } catch (error) {}

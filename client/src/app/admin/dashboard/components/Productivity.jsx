@@ -187,14 +187,14 @@ export default function EmployeeDashboard() {
 
   if (loading) {
     return (
-      <div className="flex justify-center items-center min-h-screen bg-gray-50 w-[1150px]">
+      <div className="flex justify-center items-center min-h-screen bg-gray-50 w-[1450px]">
         <BeatLoader />
       </div>
     );
   }
 
   return (
-    <div className="p-6 bg-gradient-to-br from-gray-50 to-blue-50 min-h-screen">
+    <div className="p-6 bg-gradient-to-br from-gray-50 to-blue-50 min-h-screen w-[1450px]">
       {/* Dashboard Header */}
       <div className="flex flex-col lg:flex-row items-start lg:items-center justify-between mb-8 gap-4">
         <div>

@@ -433,7 +433,7 @@ class TrackerDBv1 extends DB {
          "max_head_count","model_id") 
          VALUES ($1::varchar, $2::int, $3::int,$4::int) 
          RETURNING id;`,
-          [room.roomName, userId, room.maxHeadCount || 9999, room.modelId]
+          [room.roomName, userId, room.maxHeadCount || 1, room.modelId]
         );
         if (res.rowCount !== 1) {
           await pClient.query("ROLLBACK");
@@ -1384,7 +1384,8 @@ class MiscDB extends DB {
                 SELECT 
                 COUNT(re."room_id") as "total_rooms"
                 FROM "room_employee" as re
-                WHERE re."employee_id" = $1::int;`
+                WHERE re."employee_id" = $1::int;`,
+                [parseInt(empRoom["employee_id"])]
               );
               if (res1.rowCount !== 1) {
                 await pClient.query("ROLLBACK");
