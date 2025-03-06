@@ -40,6 +40,7 @@ import {
   Phone,
 } from "lucide-react";
 import API_LINK from "@/app/backendLink/link";
+import toast from "react-hot-toast";
 
 const COLORS = [
   "#0088FE",
@@ -83,7 +84,6 @@ export default function EmployeeDashboard() {
   useEffect(() => {
     const fetchData = async () => {
       try {
-        setLoading(true);
         const response = await fetch(
           `${API_LINK}/user/v1/statistics/dashboard/employee`,
           {
@@ -98,11 +98,9 @@ export default function EmployeeDashboard() {
         const data = await response.json();
         if (!response.ok) {
           toast.error("Failed to fetch!!!");
-          setLoading(false);
           return;
         }
         setApiData(data.data);
-        setLoading(false);
       } catch (error) {
         toast.error("Error fetching data!!!");
         console.log(error);
@@ -282,7 +280,7 @@ export default function EmployeeDashboard() {
         <CardHeader>
           <CardTitle>Team Skill Matrix</CardTitle>
           <CardDescription>
-            Comparing top performer vs. team average
+            Comparing Your performance vs Average performance
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -292,14 +290,14 @@ export default function EmployeeDashboard() {
               <PolarAngleAxis dataKey="subject" />
               <PolarRadiusAxis />
               <Radar
-                name="This Week"
+                name="Average work hours"
                 dataKey="A"
                 stroke="#8884d8"
                 fill="#8884d8"
                 fillOpacity={0.6}
               />
               <Radar
-                name="Last Week"
+                name="Your work hours"
                 dataKey="B"
                 stroke="#82ca9d"
                 fill="#82ca9d"
