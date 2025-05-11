@@ -1,0 +1,9 @@
+node_modules
+build
+.env*.local
+tmp
+python/deps
+python/__pycache__
+public/images
+metadata/jobs.json
+model_data/*.json

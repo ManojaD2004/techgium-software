@@ -1,0 +1,6 @@
+FROM redis/redis-stack
+
+COPY ./redis.conf /redis-stack.conf
+
+EXPOSE 8001
+EXPOSE 6379

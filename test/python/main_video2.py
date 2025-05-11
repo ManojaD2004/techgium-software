@@ -165,7 +165,8 @@ def update_json(roomId, cameraId, interval_sec):
             "roomId": roomId,
             "cameraId": cameraId,
         }
-        if producer:
+        print(face_data)
+        if face_data["faceDetected"] and producer:
             producer.produce(
                 "camera-job", key=str(cameraId), value=json.dumps(face_data), callback=kafka_delivery_report
             )

@@ -1047,20 +1047,26 @@ let mainCameraData: {
 let lastVisited: { [roomId: string]: number[] } = {};
 let consumer: null | Consumer = null;
 
+const { KAFKA_BROKER_URL } = serverConfigs;
+
 async function startKafka() {
   try {
+    if (consumer !== null) {
+      await stopKafka();
+    }
     const kafka = new Kafka({
       clientId: "my-app",
-      brokers: ["localhost:29092"],
+      brokers: [KAFKA_BROKER_URL],
       logLevel: logLevel.WARN,
     });
-
+    console.log(chalk.yellow("Kafka consumer started!"));
     consumer = kafka.consumer({ groupId: "techgium-group" });
     await consumer.connect();
-    await consumer.subscribe({ topic: "camera-topic", fromBeginning: true });
+    await consumer.subscribe({ topic: "camera-job", fromBeginning: true });
     await consumer.run({
       eachMessage: async ({ topic, message }) => {
         try {
+          // console.log(message);
           const jsonData: JsonOutputJob = JSON.parse(
             message.value ? message.value.toString() : "{}"
           );
@@ -1072,6 +1078,7 @@ async function startKafka() {
         }
       },
     });
+    // console.log("in 2");
   } catch (err: any) {
     console.log("startKafka Error: ", err?.message);
   }
@@ -1082,10 +1089,118 @@ async function stopKafka() {
     if (consumer) {
       await consumer.stop();
       await consumer.disconnect();
-      console.log("Kafka process stoped successfully");
+      console.log(chalk.yellow("Kafka process stoped successfully"));
     }
   } catch (err: any) {
     console.log("stopKafka Error: ", err?.message);
+  }
+}
+
+async function cameraJob(userId: string) {
+  try {
+    const modelDb = new ModelDBv1();
+    const statsDb = new StatisticsDBv1();
+    // console.log(roomCamera);
+    for (const roomId in roomCamera) {
+      const room = roomCamera[roomId];
+      const empIdsSet = new Set<number>();
+      for (const cameraId in room) {
+        const jsonData = room[cameraId];
+        if (jsonData.faceDetected === true) {
+          for (const empId of jsonData.empIds) {
+            if (empId !== "Unknown" && !Number.isNaN(parseInt(empId))) {
+              empIdsSet.add(parseInt(empId));
+            } else {
+              statsDb.addNoti(
+                parseInt(userId),
+                `Unknow person has entered the room ${mainRoomData[roomId].roomName} of roomId ${roomId},
+              detected from camera ${mainCameraData[cameraId].cameraName} of cameraId ${cameraId}`.replace(
+                  /\s+/g,
+                  " "
+                ),
+                "alert"
+              );
+            }
+          }
+        }
+      }
+      const empIds = [...empIdsSet];
+      if (empIds.length > mainRoomData[roomId].maxCap) {
+        statsDb.addNoti(
+          parseInt(userId),
+          `Maximum capacity exceeded for room ${mainRoomData[roomId].roomName} of roomId ${roomId}`.replace(
+            /\s+/g,
+            " "
+          ),
+          "warning"
+        );
+      } else if (empIds.length / mainRoomData[roomId].maxCap >= 0.5) {
+        statsDb.addNoti(
+          parseInt(userId),
+          `Room occupancy at ${parseFloat(
+            ((empIds.length / mainRoomData[roomId].maxCap) * 100).toFixed(2)
+          )}% for room ${
+            mainRoomData[roomId].roomName
+          } of roomId ${roomId}`.replace(/\s+/g, " "),
+          "info"
+        );
+      }
+      if (roomId in lastVisited) {
+        const pastEmpIds = lastVisited[roomId];
+        for (const empId of empIds) {
+          if (pastEmpIds.includes(empId) === false) {
+            statsDb.addNoti(
+              parseInt(userId),
+              `${
+                mainJobModelData[empId.toString()].empName
+              } has entered the room ${
+                mainRoomData[roomId].roomName
+              } of roomId ${roomId}`.replace(/\s+/g, " "),
+              "info"
+            );
+          }
+        }
+        for (const empId of pastEmpIds) {
+          if (empIds.includes(empId) === false) {
+            statsDb.addNoti(
+              parseInt(userId),
+              `${
+                mainJobModelData[empId.toString()].empName
+              } has leaved the room ${
+                mainRoomData[roomId].roomName
+              } of roomId ${roomId}`.replace(/\s+/g, " "),
+              "info"
+            );
+          }
+        }
+      }
+      lastVisited[roomId] = empIds;
+      const tdyDate = new Date().toLocaleDateString("en-CA");
+      if (empIds.length === 0) {
+        continue;
+      }
+      const resUpdate = await modelDb.updateUserData(
+        empIds,
+        Number.isNaN(parseInt(roomId)) ? -1 : parseInt(roomId),
+        tdyDate,
+        INTERVAL_SEC
+      );
+      if (resUpdate === -1 || resUpdate === null) {
+        console.log(
+          chalk.red(`Failed to update for users with id:`),
+          empIds,
+          "room details:",
+          room
+        );
+      } else {
+        console.log(
+          chalk.yellow(`Update done on room id: ${roomId} for users with id: `),
+          empIds
+        );
+      }
+    }
+  } catch (error: any) {
+    console.log(chalk.red(`Error: ${error?.message}.`));
   }
 }
 
@@ -1104,7 +1219,6 @@ trackRouter.post("/start", async (req, res) => {
     }
     console.log(chalk.yellow("Job starting!"));
     const modelDb = new ModelDBv1();
-    const statsDb = new StatisticsDBv1();
     const resCam = await modelDb.getCamerasForJob();
     // console.log(resCam);
     if (resCam === -1 || resCam === null) {
@@ -1139,6 +1253,7 @@ trackRouter.post("/start", async (req, res) => {
       });
       return;
     }
+    const commandLists: string[][] = [];
     for (const camera of resCam) {
       if (camera.port <= 0) {
         continue;
@@ -1203,10 +1318,10 @@ trackRouter.post("/start", async (req, res) => {
         `${path.join(process.cwd(), "/model_data")}:/app/model_data`
       );
       commandList.push(
-        "--rm",
+        "-d",
         "-e",
         "PYTHONUNBUFFERED=1",
-        "model-py",
+        "model-py-2",
         "python",
         pyFileName
       );
@@ -1215,17 +1330,17 @@ trackRouter.post("/start", async (req, res) => {
         `${camera.videoLink}`,
         `${camera.roomId}`,
         `${camera.cameraId}`,
-        `${INTERVAL_SEC}`
+        `${INTERVAL_SEC}`,
+        KAFKA_BROKER_URL
       );
       console.log(
         chalk.yellowBright(
           `Running docker container for camera: ${camera.cameraName}, cameraId: ${camera.cameraId}...`
         )
       );
-      const modelJob = execSync(
-        commandList.join(" ")
-      );
-      console.log(modelJob.toString());
+      // const modelJob = execSync(commandList.join(" "));
+      // console.log(modelJob.toString());
+      commandLists.push(commandList);
       const roomId = camera.roomId?.toString() || "";
       if (roomId in roomCamera) {
         const cameras = roomCamera[roomId];
@@ -1236,116 +1351,30 @@ trackRouter.post("/start", async (req, res) => {
         };
       }
     }
+    const pythonServers = serverConfigs.PYTHON_WORKERS_SERVERS;
+    const n = pythonServers.length;
+    const m = commandLists.length;
+    let k = 0;
+    const jump = Math.floor(m / n);
+    for (let i = 0; i < m; i = i + jump) {
+      const pythonServerLink = pythonServers[k];
+      await fetch(`${pythonServerLink}/containers/start`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          commandLists: commandLists.slice(i, Math.min(i + jump, m)),
+        }),
+      });
+      k += 1;
+    }
     if (jobInterval) {
       clearInterval(jobInterval);
     }
     startKafka();
     jobInterval = setInterval(async () => {
-      try {
-        // console.log(roomCamera);
-        for (const roomId in roomCamera) {
-          const room = roomCamera[roomId];
-          const empIdsSet = new Set<number>();
-          for (const cameraId in room) {
-            const jsonData = room[cameraId];
-            if (jsonData.faceDetected === true) {
-              for (const empId of jsonData.empIds) {
-                if (empId !== "Unknown" && !Number.isNaN(parseInt(empId))) {
-                  empIdsSet.add(parseInt(empId));
-                } else {
-                  statsDb.addNoti(
-                    parseInt(userId),
-                    `Unknow person has entered the room ${mainRoomData[roomId].roomName} of roomId ${roomId},
-                  detected from camera ${mainCameraData[cameraId].cameraName} of cameraId ${cameraId}`.replace(
-                      /\s+/g,
-                      " "
-                    ),
-                    "alert"
-                  );
-                }
-              }
-            }
-          }
-          const empIds = [...empIdsSet];
-          if (empIds.length > mainRoomData[roomId].maxCap) {
-            statsDb.addNoti(
-              parseInt(userId),
-              `Maximum capacity exceeded for room ${mainRoomData[roomId].roomName} of roomId ${roomId}`.replace(
-                /\s+/g,
-                " "
-              ),
-              "warning"
-            );
-          } else if (empIds.length / mainRoomData[roomId].maxCap >= 0.5) {
-            statsDb.addNoti(
-              parseInt(userId),
-              `Room occupancy at ${parseFloat(
-                ((empIds.length / mainRoomData[roomId].maxCap) * 100).toFixed(2)
-              )}% for room ${
-                mainRoomData[roomId].roomName
-              } of roomId ${roomId}`.replace(/\s+/g, " "),
-              "info"
-            );
-          }
-          if (roomId in lastVisited) {
-            const pastEmpIds = lastVisited[roomId];
-            for (const empId of empIds) {
-              if (pastEmpIds.includes(empId) === false) {
-                statsDb.addNoti(
-                  parseInt(userId),
-                  `${
-                    mainJobModelData[empId.toString()].empName
-                  } has entered the room ${
-                    mainRoomData[roomId].roomName
-                  } of roomId ${roomId}`.replace(/\s+/g, " "),
-                  "info"
-                );
-              }
-            }
-            for (const empId of pastEmpIds) {
-              if (empIds.includes(empId) === false) {
-                statsDb.addNoti(
-                  parseInt(userId),
-                  `${
-                    mainJobModelData[empId.toString()].empName
-                  } has leaved the room ${
-                    mainRoomData[roomId].roomName
-                  } of roomId ${roomId}`.replace(/\s+/g, " "),
-                  "info"
-                );
-              }
-            }
-          }
-          lastVisited[roomId] = empIds;
-          const tdyDate = new Date().toLocaleDateString("en-CA");
-          if (empIds.length === 0) {
-            continue;
-          }
-          const resUpdate = await modelDb.updateUserData(
-            empIds,
-            Number.isNaN(parseInt(roomId)) ? -1 : parseInt(roomId),
-            tdyDate,
-            INTERVAL_SEC
-          );
-          if (resUpdate === -1 || resUpdate === null) {
-            console.log(
-              chalk.red(`Failed to update for users with id:`),
-              empIds,
-              "room details:",
-              room
-            );
-          } else {
-            console.log(
-              chalk.yellow(
-                `Update done on room id: ${roomId} for users with id: `
-              ),
-              empIds
-            );
-          }
-        }
-      } catch (error: any) {
-        console.log(chalk.red(`Error: ${error?.message}.`));
-      }
+      cameraJob(userId);
     }, INTERVAL_SEC * 1000);
     fs.writeFileSync(
       path.join(process.cwd(), `/metadata/jobs.json`),
@@ -1361,6 +1390,29 @@ trackRouter.post("/start", async (req, res) => {
     });
   } catch (error: any) {
     console.log(chalk.red(`Error: ${error?.message}.`));
+    res.status(400).send({
+      status: "fail",
+      error: error,
+      data: {
+        message: "Internal Server Error!",
+      },
+    });
+  }
+});
+
+trackRouter.post("/test", async (req, res) => {
+  try {
+    const { status }: { status: string } = req.body;
+    if (status === "start") {
+      startKafka();
+    } else {
+      stopKafka();
+    }
+    res.status(200).send({
+      status: "success",
+    });
+  } catch (error) {
+    console.log(error);
     res.status(400).send({
       status: "fail",
       error: error,

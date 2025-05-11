@@ -7,20 +7,20 @@ async function main() {
     logLevel: logLevel.INFO,
   });
 
-  const producer = kafka.producer({ allowAutoTopicCreation: false });
+  const producer = kafka.producer({ allowAutoTopicCreation: true });
   await producer.connect();
   await producer.send({
     topic: "camera-job",
     compression: CompressionTypes.GZIP,
     messages: [
-      { key: "key1", value: "hello world", },
-      { key: "key2", value: "hey hey!", },
-      { key: "key1", value: "hello world", },
-      { key: "key2", value: "hey hey!", },
-      { key: "key1", value: "hello world", },
-      { key: "key2", value: "hey hey!", },
-      { key: "key1", value: "hello world", },
-      { key: "key2", value: "hey hey!", },
+      { key: "key1", value: '{"msg": "hello world"}', },
+      { key: "key2", value: '{"msg": "hey hey!"}', },
+      { key: "key1", value: '{"msg": "hello world"}', },
+      { key: "key2", value: '{"msg": "hey hey!"}', },
+      { key: "key1", value: '{"msg": "hello world"}', },
+      { key: "key2", value: '{"msg": "hey hey!"}', },
+      { key: "key1", value: '{"msg": "hello world"}', },
+      { key: "key2", value: '{"msg": "hey hey!"}', },
     ],
   });
 

@@ -1,0 +1,14 @@
+services:
+  db:
+    build:
+      context: ./
+      dockerfile: dockerfile.pg
+    ports:
+      - "5432:5432"
+  cache:
+    build:
+      context: ./
+      dockerfile: dockerfile.redis
+    ports:
+      - "6379:6379"
+      - "8001:8001"
