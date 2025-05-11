@@ -21,11 +21,12 @@ import {
 } from "../types/user";
 import { cameraSchema, modelSchema, roomSchema } from "../types/model";
 import path from "path";
-import { ChildProcessWithoutNullStreams, spawn } from "child_process";
+import { ChildProcessWithoutNullStreams, execSync, spawn } from "child_process";
 import { CameraJob } from "../types/db";
 import { JsonOutputJob, ModelFeed } from "../types/python";
 import { getDummyJsonOutput, stopJob } from "../helpers/jobs";
 import { randInt } from "../helpers/random";
+import { Consumer, Kafka, logLevel } from "kafkajs";
 const userRouter = express.Router();
 const v1Routes = express.Router();
 const adminRoutes = express.Router();
@@ -1024,7 +1025,6 @@ trackRouter.get("/live/:port", async (req, res) => {
 });
 
 // Jobs
-const jobProcesses: ChildProcessWithoutNullStreams[] = [];
 const roomCamera: {
   [roomId: string]: {
     [cameraId: string]: JsonOutputJob;
@@ -1045,6 +1045,49 @@ let mainCameraData: {
 } = {};
 
 let lastVisited: { [roomId: string]: number[] } = {};
+let consumer: null | Consumer = null;
+
+async function startKafka() {
+  try {
+    const kafka = new Kafka({
+      clientId: "my-app",
+      brokers: ["localhost:29092"],
+      logLevel: logLevel.WARN,
+    });
+
+    consumer = kafka.consumer({ groupId: "techgium-group" });
+    await consumer.connect();
+    await consumer.subscribe({ topic: "camera-topic", fromBeginning: true });
+    await consumer.run({
+      eachMessage: async ({ topic, message }) => {
+        try {
+          const jsonData: JsonOutputJob = JSON.parse(
+            message.value ? message.value.toString() : "{}"
+          );
+          console.log(jsonData);
+          const cameras = roomCamera[jsonData.roomId];
+          cameras[jsonData.cameraId] = jsonData;
+        } catch (error: any) {
+          console.log("Kafka run error: ", error?.message);
+        }
+      },
+    });
+  } catch (err: any) {
+    console.log("startKafka Error: ", err?.message);
+  }
+}
+
+async function stopKafka() {
+  try {
+    if (consumer) {
+      await consumer.stop();
+      await consumer.disconnect();
+      console.log("Kafka process stoped successfully");
+    }
+  } catch (err: any) {
+    console.log("stopKafka Error: ", err?.message);
+  }
+}
 
 trackRouter.post("/start", async (req, res) => {
   try {
@@ -1174,25 +1217,15 @@ trackRouter.post("/start", async (req, res) => {
         `${camera.cameraId}`,
         `${INTERVAL_SEC}`
       );
-      // console.log(commandList[0], commandList.slice(1));
-      // console.log(commandList.join(" "));
       console.log(
         chalk.yellowBright(
           `Running docker container for camera: ${camera.cameraName}, cameraId: ${camera.cameraId}...`
         )
       );
-      const modelJob = spawn(commandList[0], commandList.slice(1));
-      modelJob.stdout.on("data", async (data) => {
-        const data1 = data.toString() as string;
-        // console.log(data1);
-        try {
-          const jsonData: JsonOutputJob = JSON.parse(data1);
-          console.log(jsonData);
-          const cameras = roomCamera[jsonData.roomId];
-          cameras[jsonData.cameraId] = jsonData;
-        } catch (error) {}
-      });
-      jobProcesses.push(modelJob);
+      const modelJob = execSync(
+        commandList.join(" ")
+      );
+      console.log(modelJob.toString());
       const roomId = camera.roomId?.toString() || "";
       if (roomId in roomCamera) {
         const cameras = roomCamera[roomId];
@@ -1206,6 +1239,7 @@ trackRouter.post("/start", async (req, res) => {
     if (jobInterval) {
       clearInterval(jobInterval);
     }
+    startKafka();
     jobInterval = setInterval(async () => {
       try {
         // console.log(roomCamera);
@@ -1374,16 +1408,13 @@ trackRouter.post("/stop", async (req, res) => {
       });
       return;
     }
-    for (const jobProcess of jobProcesses) {
-      jobProcess.kill();
-      console.log(chalk.yellow(`Clearing child process: ${jobProcess.pid}`));
-    }
     if (jobInterval) {
       clearInterval(jobInterval);
       console.log(
         chalk.yellow(`Clearing job interval function: ${jobInterval}`)
       );
     }
+    stopKafka();
     res.status(200).send({
       status: "success",
       data: {

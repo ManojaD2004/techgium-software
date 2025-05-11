@@ -1,0 +1,21 @@
+FROM python:3.9
+
+WORKDIR /app
+
+RUN apt-get update 
+RUN apt-get upgrade
+RUN apt-get install -y libgl1-mesa-glx libglib2.0-0 
+
+RUN  rm -rf /var/lib/apt/lists/*
+
+COPY ./requirements.txt ./
+
+RUN pip install -U pip wheel cmake
+RUN pip install -r requirements.txt
+
+COPY ./ ./
+
+EXPOSE 5222
+
+CMD [ "python", "main_video2.py" ,"/app/model_data/demo.json","http://192.168.1.7:4747/video", "1", "5", "3"]
+

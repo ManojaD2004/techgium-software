@@ -90,7 +90,7 @@ def main():
     sfr.load_encoding_images("images/")  # Folder with known face images
     print(sfr)
     # Use your mobile stream URL (try appending '/video' if needed)
-    stream_url = "http://192.168.1.7:4747/video"
+    stream_url = "rtsp://test123:test123@192.168.1.8/stream1"
     try:
         vs = ThreadedVideoStream(stream_url).start()
     except Exception as e:
@@ -105,49 +105,49 @@ def main():
         target=detection_worker, args=(sfr, vs, 0.5), daemon=True
     )
     detection_thread.start()
-    json_thread = threading.Thread(
-        target=update_json, args=(), daemon=True
-    )
-    json_thread.start()
+    # json_thread = threading.Thread(
+    #     target=update_json, args=(), daemon=True
+    # )
+    # json_thread.start()
 
     while True:
         ret, frame = vs.read()
         if not ret or frame is None:
             continue
 
-    #     # Safely copy the latest detection results.
-    #     with detection_lock:
-    #         face_locations = latest_face_locations.copy()
-    #         face_names = latest_face_names.copy()
+        # Safely copy the latest detection results.
+        with detection_lock:
+            face_locations = latest_face_locations.copy()
+            face_names = latest_face_names.copy()
 
-    #     # Draw detection results on the current frame.
-    #     for face_loc, name in zip(face_locations, face_names):
-    #         # face_loc is in [top, right, bottom, left] format.
-    #         y1, x2, y2, x1 = face_loc
-    #         cv2.rectangle(frame, (x1, y1), (x2, y2), (0, 0, 200), 2)
-    #         cv2.putText(
-    #             frame, name, (x1, y1 - 10), cv2.FONT_ITALIC, 0.8, (0, 0, 200), 2
-    #         )
+        # Draw detection results on the current frame.
+        for face_loc, name in zip(face_locations, face_names):
+            # face_loc is in [top, right, bottom, left] format.
+            y1, x2, y2, x1 = face_loc
+            cv2.rectangle(frame, (x1, y1), (x2, y2), (0, 0, 200), 2)
+            cv2.putText(
+                frame, name, (x1, y1 - 10), cv2.FONT_ITALIC, 0.8, (0, 0, 200), 2
+            )
 
-    #     # Count the number of faces and overlay it on the frame.
-    #     head_count = len(face_locations)
-    #     cv2.putText(
-    #         frame,
-    #         f"Head Count: {head_count}",
-    #         (10, 30),
-    #         cv2.FONT_ITALIC,
-    #         1,
-    #         (0, 255, 0),
-    #         2,
-    #     )
+        # Count the number of faces and overlay it on the frame.
+        head_count = len(face_locations)
+        cv2.putText(
+            frame,
+            f"Head Count: {head_count}",
+            (10, 30),
+            cv2.FONT_ITALIC,
+            1,
+            (0, 255, 0),
+            2,
+        )
 
-    #     cv2.imshow("Stream", frame)
-    #     key = cv2.waitKey(1) & 0xFF
-    #     if key == 27:  # Press 'ESC' key to exit.
-    #         break
+        cv2.imshow("Stream", frame)
+        key = cv2.waitKey(1) & 0xFF
+        if key == 27:  # Press 'ESC' key to exit.
+            break
 
-    # vs.stop()
-    # cv2.destroyAllWindows()
+    vs.stop()
+    cv2.destroyAllWindows()
 
 
 if __name__ == "__main__":

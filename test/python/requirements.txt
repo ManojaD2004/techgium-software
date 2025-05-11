@@ -1,4 +1,4 @@
 opencv-python
 face_recognition
-# flask
-# mediapipe
+flask
+confluent_kafka

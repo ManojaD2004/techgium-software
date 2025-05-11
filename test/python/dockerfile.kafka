@@ -1,0 +1,15 @@
+FROM python:3.9
+
+WORKDIR /app
+
+RUN apt-get update 
+RUN apt-get upgrade
+
+RUN pip install -U pip confluent_kafka
+
+COPY ./ ./
+
+EXPOSE 5222
+
+CMD [ "python", "producer1.py"]
+
