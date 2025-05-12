@@ -7,7 +7,7 @@ import { stopJob } from "./helpers/jobs";
 
 async function main() {
   try {
-    const PORT = process.env?.PORT || 9000;
+    const PORT = process.env?.PORT || 9001;
 
     app.listen(PORT, async () => {
       console.log(chalk.greenBright(`Server listening to Port: ${PORT}`));

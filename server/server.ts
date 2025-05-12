@@ -5,7 +5,6 @@ import { app } from "./app";
 import { envConfigs, serverConfigs } from "./configs/configs";
 import fs from "fs";
 import path from "path";
-import { stopJob } from "./helpers/jobs";
 
 async function main() {
   try {
@@ -63,9 +62,6 @@ async function main() {
         console.log(chalk.yellowBright("Cleaned up Redis DB!"));
         await db.end();
         console.log(chalk.yellowBright("Cleaned up PostgresSQL DB!"));
-        console.log(chalk.yellowBright("Cleaning up containers!"));
-        stopJob();
-        console.log(chalk.yellowBright("Cleaned up containers!"));
         console.log(chalk.green("Cleaned up done!"));
         process.exit(0);
       } catch (error: any) {

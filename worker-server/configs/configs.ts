@@ -15,6 +15,7 @@ const serverConfigs = {
   SESSION_EXPIRE_TIME_IN_DAYS: 15, // how much time does the session id has in days
   JOB_INTERVAL_HOUR: 1,
   CORS_ORIGIN: "http://localhost:3000",
+  KAFKA_BROKER_URL: "192.168.1.11:29092",
 } as const;
 
 const dbConfigs = {

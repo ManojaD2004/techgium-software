@@ -35,10 +35,6 @@
     "local-devices": "^4.0.0",
     "moment": "^2.30.1",
     "morgan": "^1.10.0",
-    "node-cache": "^5.1.2",
-    "pg": "^8.13.1",
-    "pg-format": "^1.0.4",
-    "redis": "^4.7.0",
     "short-unique-id": "^5.2.0",
     "uuid": "^11.0.4",
     "zod": "^3.24.1"

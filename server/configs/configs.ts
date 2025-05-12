@@ -16,7 +16,9 @@ const serverConfigs = {
   JOB_INTERVAL_HOUR: 1,
   CORS_ORIGIN: "http://localhost:3000",
   KAFKA_BROKER_URL: "192.168.1.11:29092",
-  PYTHON_WORKERS_SERVERS: ["192.168.1.11:5001"],
+  PYTHON_WORKERS_SERVERS: ["http://192.168.1.11:9001"],
+  PYTHON_WORKER_TOKEN: "cat",
+  SERVER_URL: "192.168.1.11:9000",
 } as const;
 
 const dbConfigs = {

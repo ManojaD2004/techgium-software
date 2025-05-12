@@ -96,7 +96,7 @@ CREATE TABLE
     "created_at" timestamptz DEFAULT (CURRENT_TIMESTAMP),
     "total_time_spent" numeric DEFAULT (0),
     "total_productive_work" numeric DEFAULT (0),
-    "metadata" varchar
+    "metadata" varchar,
     UNIQUE ("room_id", "employee_id", "date")
   );
 

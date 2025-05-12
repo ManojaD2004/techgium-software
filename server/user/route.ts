@@ -21,10 +21,9 @@ import {
 } from "../types/user";
 import { cameraSchema, modelSchema, roomSchema } from "../types/model";
 import path from "path";
-import { ChildProcessWithoutNullStreams, execSync, spawn } from "child_process";
 import { CameraJob } from "../types/db";
 import { JsonOutputJob, ModelFeed } from "../types/python";
-import { getDummyJsonOutput, stopJob } from "../helpers/jobs";
+import { getDummyJsonOutput } from "../helpers/jobs";
 import { randInt } from "../helpers/random";
 import { Consumer, Kafka, logLevel } from "kafkajs";
 const userRouter = express.Router();
@@ -1239,34 +1238,34 @@ trackRouter.post("/start", async (req, res) => {
       });
       return;
     }
-    const jobs: CameraJob[] = JSON.parse(
-      fs.readFileSync(path.join(process.cwd(), `/metadata/jobs.json`), {
-        encoding: "utf8",
-      })
-    );
-    if (Object.keys(jobs).length !== 0) {
-      res.status(200).send({
-        status: "success",
-        data: {
-          cameras: resCam,
-        },
-      });
-      return;
-    }
-    const commandLists: string[][] = [];
+    const jobModelDatas: ModelFeed[] = [];
+    const imagesUrls: string[][] = [];
     for (const camera of resCam) {
       if (camera.port <= 0) {
         continue;
       }
       const tdyDate = new Date().toLocaleDateString("en-CA");
       const jobModelData: ModelFeed = {};
+      const jobImageUrls: string[] = [];
       for (const emp of camera.emps) {
         jobModelData[emp.id.toString()] = {
           empName: `${emp.firstName} ${emp.lastName}`,
           empUserName: emp.userName,
           empId: emp.id.toString(),
-          images: emp.images.map((ele) => ele.imgPath || "need img path"),
+          images: emp.images.map(
+            (ele) =>
+              ele.imgPath || "need img path"
+          ),
         };
+        jobImageUrls.push(
+          ...emp.images.map(
+            (ele) =>
+              ele.imgPath?.replace(
+                "./images/",
+                `http://${serverConfigs.SERVER_URL}/file/v1/image/`
+              ) || "need img path"
+          )
+        );
         const resInsert = await modelDb.insertUserDataIfNotExists(
           emp.id,
           camera.roomId || -1,
@@ -1282,6 +1281,7 @@ trackRouter.post("/start", async (req, res) => {
           return;
         }
       }
+      imagesUrls.push(jobImageUrls);
       mainJobModelData = { ...mainJobModelData, ...jobModelData };
       mainRoomData = {
         ...mainRoomData,
@@ -1292,55 +1292,7 @@ trackRouter.post("/start", async (req, res) => {
         },
       };
       mainCameraData[camera.cameraId] = camera;
-      fs.writeFileSync(
-        path.join(
-          process.cwd(),
-          `/model_data/${camera.roomId}-${camera.cameraId}.json`
-        ),
-        JSON.stringify(jobModelData, null, 2),
-        { encoding: "utf8" }
-      );
-      const commandList = ["docker", "run"];
-      const pyFileName =
-        camera.modelName === "hog" ? "main_video2.py" : "main_logic2.py";
-      commandList.push(
-        "-p",
-        `${camera.port}:5222`,
-        "--name",
-        `camera_${camera.cameraId}`
-      );
-      commandList.push(
-        "-v",
-        `${path.join(process.cwd(), "/public/images")}:/app/images`
-      );
-      commandList.push(
-        "-v",
-        `${path.join(process.cwd(), "/model_data")}:/app/model_data`
-      );
-      commandList.push(
-        "-d",
-        "-e",
-        "PYTHONUNBUFFERED=1",
-        "model-py-2",
-        "python",
-        pyFileName
-      );
-      commandList.push(
-        `/app/model_data/${camera.roomId}-${camera.cameraId}.json`,
-        `${camera.videoLink}`,
-        `${camera.roomId}`,
-        `${camera.cameraId}`,
-        `${INTERVAL_SEC}`,
-        KAFKA_BROKER_URL
-      );
-      console.log(
-        chalk.yellowBright(
-          `Running docker container for camera: ${camera.cameraName}, cameraId: ${camera.cameraId}...`
-        )
-      );
-      // const modelJob = execSync(commandList.join(" "));
-      // console.log(modelJob.toString());
-      commandLists.push(commandList);
+      jobModelDatas.push(jobModelData);
       const roomId = camera.roomId?.toString() || "";
       if (roomId in roomCamera) {
         const cameras = roomCamera[roomId];
@@ -1353,18 +1305,21 @@ trackRouter.post("/start", async (req, res) => {
     }
     const pythonServers = serverConfigs.PYTHON_WORKERS_SERVERS;
     const n = pythonServers.length;
-    const m = commandLists.length;
+    const m = resCam.length;
     let k = 0;
-    const jump = Math.floor(m / n);
+    const jump = Math.round(m / n);
     for (let i = 0; i < m; i = i + jump) {
       const pythonServerLink = pythonServers[k];
       await fetch(`${pythonServerLink}/containers/start`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
+          Authorization: "Token " + serverConfigs.PYTHON_WORKER_TOKEN,
         },
         body: JSON.stringify({
-          commandLists: commandLists.slice(i, Math.min(i + jump, m)),
+          resCams: resCam.slice(i, i + jump),
+          jobs: jobModelDatas.slice(i, i + jump),
+          imagesUrls: imagesUrls.slice(i, i + jump),
         }),
       });
       k += 1;
@@ -1376,11 +1331,6 @@ trackRouter.post("/start", async (req, res) => {
     jobInterval = setInterval(async () => {
       cameraJob(userId);
     }, INTERVAL_SEC * 1000);
-    fs.writeFileSync(
-      path.join(process.cwd(), `/metadata/jobs.json`),
-      JSON.stringify(resCam, null, 2),
-      { encoding: "utf8" }
-    );
     console.log(chalk.yellow("Job started!"));
     res.status(200).send({
       status: "success",
@@ -1400,36 +1350,20 @@ trackRouter.post("/start", async (req, res) => {
   }
 });
 
-trackRouter.post("/test", async (req, res) => {
-  try {
-    const { status }: { status: string } = req.body;
-    if (status === "start") {
-      startKafka();
-    } else {
-      stopKafka();
-    }
-    res.status(200).send({
-      status: "success",
-    });
-  } catch (error) {
-    console.log(error);
-    res.status(400).send({
-      status: "fail",
-      error: error,
-      data: {
-        message: "Internal Server Error!",
-      },
-    });
-  }
-});
-
 trackRouter.get("/get", async (req, res) => {
   try {
-    const jobs: CameraJob[] = JSON.parse(
-      fs.readFileSync(path.join(process.cwd(), `/metadata/jobs.json`), {
-        encoding: "utf8",
-      })
-    );
+    const jobs: CameraJob[] = [];
+    const pythonServers = serverConfigs.PYTHON_WORKERS_SERVERS;
+    for (const pythonServer of pythonServers) {
+      const res = await fetch(`${pythonServer}/containers/get`, {
+        method: "GET",
+        headers: {
+          Authorization: "Token " + serverConfigs.PYTHON_WORKER_TOKEN,
+        },
+      });
+      const resJson: { data: { jobs: CameraJob[] } } = await res.json();
+      jobs.push(...resJson.data.jobs);
+    }
     res.status(200).send({
       status: "success",
       data: {
@@ -1450,28 +1384,24 @@ trackRouter.get("/get", async (req, res) => {
 
 trackRouter.post("/stop", async (req, res) => {
   try {
-    const jobCleaned = stopJob();
-    if (jobCleaned === null) {
-      res.status(400).send({
-        status: "fail",
-        data: {
-          message: "Could not clear the jobs.",
-        },
-      });
-      return;
-    }
     if (jobInterval) {
       clearInterval(jobInterval);
       console.log(
         chalk.yellow(`Clearing job interval function: ${jobInterval}`)
       );
     }
-    stopKafka();
+    await stopKafka();
+    const pythonServers = serverConfigs.PYTHON_WORKERS_SERVERS;
+    for (const pythonServer of pythonServers) {
+      await fetch(`${pythonServer}/containers/stop`, {
+        method: "POST",
+        headers: {
+          Authorization: "Token " + serverConfigs.PYTHON_WORKER_TOKEN,
+        },
+      });
+    }
     res.status(200).send({
       status: "success",
-      data: {
-        jobCleaned: jobCleaned,
-      },
     });
   } catch (error: any) {
     console.log(chalk.red(`Error: ${error?.message}`));
@@ -1535,6 +1465,29 @@ trackRouter.get("/noti", async (req, res) => {
     });
   } catch (error: any) {
     console.log(chalk.red(`Error: ${error?.message}`));
+    res.status(400).send({
+      status: "fail",
+      error: error,
+      data: {
+        message: "Internal Server Error!",
+      },
+    });
+  }
+});
+
+trackRouter.post("/test", async (req, res) => {
+  try {
+    const { status }: { status: string } = req.body;
+    if (status === "start") {
+      startKafka();
+    } else {
+      stopKafka();
+    }
+    res.status(200).send({
+      status: "success",
+    });
+  } catch (error) {
+    console.log(error);
     res.status(400).send({
       status: "fail",
       error: error,

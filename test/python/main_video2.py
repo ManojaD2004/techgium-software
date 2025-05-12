@@ -154,6 +154,8 @@ def kafka_delivery_report(err, msg):
         print("Message delivered to", msg.topic(), msg.partition())
 
 
+prev_face_data = {"faceDetected": False}
+
 def update_json(roomId, cameraId, interval_sec):
     """Background task to write face detection data to JSON every 5 seconds."""
     while True:
@@ -166,11 +168,13 @@ def update_json(roomId, cameraId, interval_sec):
             "cameraId": cameraId,
         }
         print(face_data)
-        if face_data["faceDetected"] and producer:
+        global prev_face_data
+        if (face_data["faceDetected"] or prev_face_data["faceDetected"]) and producer:
             producer.produce(
                 "camera-job", key=str(cameraId), value=json.dumps(face_data), callback=kafka_delivery_report
             )
             producer.flush()
+        prev_face_data = face_data
         time.sleep(interval_sec)
 
 
