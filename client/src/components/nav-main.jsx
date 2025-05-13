@@ -1,6 +1,6 @@
 "use client"
 
-import {  Camera, User, UserPlus2Icon, PlusCircleIcon, BarChart2Icon } from "lucide-react"
+import {  Camera, User, UserPlus2Icon, PlusCircleIcon, BarChart2Icon, MessageCircleCodeIcon, CameraIcon, LucideCameraOff, SwitchCamera } from "lucide-react"
 
 import {
   SidebarGroup,
@@ -31,6 +31,16 @@ const navMain = [
     title: "Add Room",
     url: "/admin/room",
     icon: PlusCircleIcon,
+  },
+  {
+    title: "Add Camera",
+    url: "/admin/addcamera",
+    icon: SwitchCamera,
+  },
+  {
+    title: "Chatbot",
+    url: "/admin/chabot",
+    icon: MessageCircleCodeIcon,
   },
 ]
 
