@@ -39,7 +39,7 @@ const navMain = [
   },
   {
     title: "Chatbot",
-    url: "/admin/chabot",
+    url: "/admin/chatbot",
     icon: MessageCircleCodeIcon,
   },
 ]

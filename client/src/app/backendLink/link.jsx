@@ -1,4 +1,4 @@
-const API_LINK="http://localhost:9000";
+const API_LINK="https://profound-adequate-salmon.ngrok-free.app";
 export default API_LINK
 
 
