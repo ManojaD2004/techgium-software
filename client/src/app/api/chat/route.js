@@ -1,52 +1,62 @@
+import API_LINK from "@/app/backendLink/link";
 import { GoogleGenerativeAI } from "@google/generative-ai";
-import { createClient } from "@supabase/supabase-js";
 import { NextResponse } from "next/server";
-
-
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL,
-  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
-);
 
 export async function POST(req) {
   try {
-    console.log("hello");
-    
+    console.log("API Called");
+
     const { query } = await req.json();
     if (!query) {
       return NextResponse.json({ error: "Query is required" }, { status: 400 });
     }
 
-   
-    const { data: logs, error } = await supabase
-      .from("logs")
-      .select("employee_id, timestamp, action, duration_minutes, description, employees(name, department)");
+    const apiRes = await fetch(`${API_LINK}/user/v1/ai/query`, {
+      method: "GET",
+      headers: {
+        "Content-Type": "application/json",
+        "ngrok-skip-browser-warning": "true",
+      },
+      credentials: "include",
+    });
 
-    if (error) {
-      throw new Error("Error fetching logs: " + error.message);
+    if (!apiRes.ok) {
+      throw new Error(`Failed to fetch logs: ${apiRes.statusText}`);
     }
 
-    if (!logs.length) {
-      return NextResponse.json({ answer: "No logs found in the database." });
+    const data = await apiRes.json();
+    const logs = data.data.logs;
+
+    if (!Array.isArray(logs) || logs.length === 0) {
+      return NextResponse.json({ answer: "No logs found from external API." });
     }
 
-   
+    // Format logs into readable context
     const context = logs
-      .map(log =>
-        `Employee: ${log.employees.name}\nDepartment: ${log.employees.department}\nTask: ${log.description}\nAction: ${log.action}\nDuration: ${log.duration_minutes} minutes\nDate: ${log.timestamp}`
-      )
+      .map((log) => {
+        const metadata = log.metadata ? JSON.parse(log.metadata) : {};
+        const metadataString = Object.entries(metadata)
+          .map(([key, value]) => `${key}: ${value}`)
+          .join(", ");
+
+        return `Employee: ${log.firstName} ${log.lastName}
+Room: ${log.roomName}
+Total Time (seconds): ${log.totalTime}
+Productive Time (seconds): ${log.prodTime}
+Activities: ${metadataString || "N/A"}`;
+      })
       .join("\n\n");
-console.log(logs);
 
-
+    // Construct prompt
     const prompt = `
-      You're an HR assistant analyzing employee work logs. Use this data:
-      ${context}
+You are an HR assistant analyzing employee room tracking and productivity data. Here's the report:
 
-      Respond to: "${query}"
-    `;
+${context}
 
+Based on the above data, respond to this query: "${query}"
+`;
 
+    // Generate response using Gemini
     const genAI = new GoogleGenerativeAI(process.env.GOOGLE_API_KEY);
     const model = genAI.getGenerativeModel({
       model: "gemini-1.5-flash",
@@ -59,9 +69,8 @@ console.log(logs);
 
     return NextResponse.json({
       answer: text,
-      sources: logs, 
+      sources: logs,
     });
-
   } catch (err) {
     console.error("API Error:", err);
     return NextResponse.json(
@@ -76,16 +85,90 @@ console.log(logs);
   }
 }
 
+// import { GoogleGenerativeAI } from "@google/generative-ai";
+// import { createClient } from "@supabase/supabase-js";
+// import { NextResponse } from "next/server";
+// import { QdrantClient } from '@qdrant/js-client-rest';
+// import { ChatOllama } from '@langchain/community/chat_models/ollama';
+// import { OllamaEmbeddings } from '@langchain/community/embeddings/ollama';
+// import { StringOutputParser } from '@langchain/core/output_parsers';
+// import { RunnableSequence, RunnablePassthrough } from '@langchain/core/runnables';
+// import { PromptTemplate } from '@langchain/core/prompts';
+// import { QdrantVectorStore } from '@langchain/community/vectorstores/qdrant';
+// import { formatDocumentsAsString } from 'langchain/util/document';
 
+// const supabase = createClient(
+//   process.env.NEXT_PUBLIC_SUPABASE_URL,
+//   process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
+// );
 
+// export async function POST(req) {
+//   try {
+//     console.log("hello");
 
+//     const { query } = await req.json();
+//     if (!query) {
+//       return NextResponse.json({ error: "Query is required" }, { status: 400 });
+//     }
 
+//     const { data: logs, error } = await supabase
+//       .from("logs")
+//       .select("employee_id, timestamp, action, duration_minutes, description, employees(name, department)");
 
+//     if (error) {
+//       throw new Error("Error fetching logs: " + error.message);
+//     }
+
+//     if (!logs.length) {
+//       return NextResponse.json({ answer: "No logs found in the database." });
+//     }
+
+//     const context = logs
+//       .map(log =>
+//         `Employee: ${log.employees.name}\nDepartment: ${log.employees.department}\nTask: ${log.description}\nAction: ${log.action}\nDuration: ${log.duration_minutes} minutes\nDate: ${log.timestamp}`
+//       )
+//       .join("\n\n");
+// console.log(logs);
+
+//     const prompt = `
+//       You're an HR assistant analyzing employee work logs. Use this data:
+//       ${context}
+
+//       Respond to: "${query}"
+//     `;
+
+//     const genAI = new GoogleGenerativeAI(process.env.GOOGLE_API_KEY);
+//     const model = genAI.getGenerativeModel({
+//       model: "gemini-1.5-flash",
+//       generationConfig: { temperature: 0.3 },
+//     });
+
+//     const result = await model.generateContent(prompt);
+//     const response = await result.response;
+//     const text = response.text();
+
+//     return NextResponse.json({
+//       answer: text,
+//       sources: logs,
+//     });
+
+//   } catch (err) {
+//     console.error("API Error:", err);
+//     return NextResponse.json(
+//       {
+//         error: "Internal error",
+//         details: err.message.includes("API key")
+//           ? "Invalid Google API key"
+//           : err.message,
+//       },
+//       { status: 500 }
+//     );
+//   }
+// }
 
 // import { createClient } from "@supabase/supabase-js";
 // import { NextResponse } from "next/server";
-// import { Ollama } from "ollama"; 
-
+// import { Ollama } from "ollama";
 
 // const supabase = createClient(
 //   process.env.NEXT_PUBLIC_SUPABASE_URL,
@@ -101,8 +184,7 @@ console.log(logs);
 // export async function POST(req) {
 //   try {
 //     const { query } = await req.json();
-    
-  
+
 //     if (!query?.trim()) {
 //       return NextResponse.json(
 //         { error: "Query must be a non-empty string" },
@@ -110,15 +192,14 @@ console.log(logs);
 //       );
 //     }
 
-   
 //     const { data: logs, error } = await supabase
 //       .from("logs")
 //       .select(`
-//         employee_id, 
-//         timestamp, 
-//         action, 
-//         duration_minutes, 
-//         description, 
+//         employee_id,
+//         timestamp,
+//         action,
+//         duration_minutes,
+//         description,
 //         employees (name, department)
 //       `)
 //       .not("employees", "is", null);
@@ -131,7 +212,6 @@ console.log(logs);
 //       );
 //     }
 
-   
 //     const context = logs
 //       .map(log => {
 //         if (!log.employees) return "";
@@ -147,7 +227,6 @@ console.log(logs);
 //       .filter(Boolean)
 //       .join("\n\n");
 
- 
 //     const prompt = `
 //       You're an HR assistant analyzing employee work logs. Use this data:
 //       ${context}
@@ -155,7 +234,7 @@ console.log(logs);
 //       Respond to: "${query}"
 //     `;
 
-//     const { text } = await ollama.chat({ 
+//     const { text } = await ollama.chat({
 //       messages: [{
 //         role: "user",
 //         content: prompt
@@ -176,7 +255,7 @@ console.log(logs);
 //   } catch (err) {
 //     console.error("API Error:", err);
 //     return NextResponse.json(
-//       { 
+//       {
 //         error: "Analysis failed",
 //         details: err.message.replace(/API key/g, "") // Remove sensitive info
 //       },
@@ -184,7 +263,6 @@ console.log(logs);
 //     );
 //   }
 // }
-
 
 // import { NextResponse } from 'next/server';
 // import { QdrantClient } from '@qdrant/js-client-rest';
@@ -195,7 +273,6 @@ console.log(logs);
 // import { PromptTemplate } from '@langchain/core/prompts';
 // import { QdrantVectorStore } from '@langchain/community/vectorstores/qdrant';
 // import { formatDocumentsAsString } from 'langchain/util/document';
-
 
 // const qdrantClient = new QdrantClient({
 //   url: process.env.QDRANT_URL || 'http://localhost:6333',
@@ -230,7 +307,7 @@ console.log(logs);
 // export async function POST(request) {
 //   try {
 //     const { query } = await request.json();
-    
+
 //     if (!query) {
 //       return NextResponse.json(
 //         { error: "Query parameter is required" },
@@ -240,7 +317,7 @@ console.log(logs);
 
 //     // Initialize embeddings - create a fresh instance for each request to avoid issues
 //     const embeddings = new OllamaEmbeddings({
-//       model: "gemma:2b", 
+//       model: "gemma:2b",
 //       baseUrl: process.env.OLLAMA_BASE_URL || "http://localhost:11434",
 //     });
 
@@ -258,14 +335,13 @@ console.log(logs);
 //       k: 5,
 //     });
 //     console.log(retriever);
-    
 
 //     // Create the RAG chain
 //     const ragChain = RunnableSequence.from([
 //       {
 //         context: async (query) => {
 //           const docs = await retriever.getRelevantDocuments(query);
-//           console.log("🔍 Retrieved Documents:", docs); 
+//           console.log("🔍 Retrieved Documents:", docs);
 //           return formatDocumentsAsString(docs);
 //         },
 //         question: new RunnablePassthrough(),
@@ -276,7 +352,7 @@ console.log(logs);
 //     ]);
 
 //     const response = await ragChain.invoke(query);
-    
+
 //     return NextResponse.json({ answer: response });
 //   } catch (error) {
 //     console.error("Error processing request:", error);
@@ -386,14 +462,3 @@ console.log(logs);
 //     );
 //   }
 // }
-
-
-
-
-
-
-
-
-
-
-

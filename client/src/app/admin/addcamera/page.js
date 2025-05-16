@@ -2,11 +2,22 @@
 import { useState, useRef, useEffect } from "react";
 import API_LINK from "@/app/backendLink/link";
 import toast from "react-hot-toast";
+import {
+  Video,
+  Trash2,
+  Network,
+  Link2,
+  MapPin,
+  CheckCircle,
+  XCircle,
+} from "lucide-react";
 
 export default function CameraManagement() {
   const [cameras, setCameras] = useState([]);
   const [showForm, setShowForm] = useState(false);
   const [currentStep, setCurrentStep] = useState(1);
+  const [show, setShow] = useState(true);
+  const [previewImage1, setPreiviewImage1] = useState(""); 
   const [formData, setFormData] = useState({
     cameraName: "",
     ip: "",
@@ -18,10 +29,12 @@ export default function CameraManagement() {
   const [previewImage, setPreviewImage] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [box, setBox] = useState(null);
+  const [normalizedBox, setNormalizedBox] = useState(null); // New state for normalized coordinates
   const [isResizing, setIsResizing] = useState(false);
   const [resizeHandle, setResizeHandle] = useState(null);
   const [startPos, setStartPos] = useState({ x: 0, y: 0 });
   const imgRef = useRef(null);
+
   useEffect(() => {
     try {
       fetch(`${API_LINK}/user/v1/admin/get/cameras/all`, {
@@ -35,11 +48,38 @@ export default function CameraManagement() {
         .then((res) => res.json())
         .then((data) => {
           setCameras(data.data.cameras);
+          console.log(data);
         });
     } catch (err) {
       console.log(err);
     }
   }, []);
+
+  // Convert pixel coordinates to normalized coordinates (0-1)
+  useEffect(() => {
+    if (box && imgRef.current) {
+      const imgWidth = imgRef.current.naturalWidth;
+      const imgHeight = imgRef.current.naturalHeight;
+      
+      // Create normalized coordinates (0-1 range)
+      const normalized = {
+        x: box.x / imgWidth,
+        y: box.y / imgHeight,
+        width: box.width / imgWidth,
+        height: box.height / imgHeight
+      };
+      
+      // Round to 3 decimal places for cleaner values
+      for (const key in normalized) {
+        normalized[key] = Math.round(normalized[key] * 1000) / 1000;
+      }
+      
+      setNormalizedBox(normalized);
+      console.log("Normalized coordinates (0-1):", normalized);
+    } else {
+      setNormalizedBox(null);
+    }
+  }, [box]);
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -83,6 +123,7 @@ export default function CameraManagement() {
           console.log(data.data);
 
           setPreviewImage(data.data.previewUrl);
+          setPreiviewImage1(data.data.previewUrl);
           setCurrentStep(3);
         } catch (e) {
           console.error(e);
@@ -99,45 +140,22 @@ export default function CameraManagement() {
   };
 
   // Refresh preview image
-  const refreshPreview = async () => {
-    setIsLoading(true);
-    try {
-      const res = await fetch(`${API_LINK}/cameras/preview/refresh`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ videoLink: formData.videoLink }),
-      });
-      if (!res.ok) {
-        toast.error("Refresh failed");
-      }
-      const { previewUrl } = await res.json();
-      setPreviewImage(previewUrl);
-    } catch (e) {
-      console.error(e);
-      alert("Failed to refresh preview");
-    } finally {
-      setIsLoading(false);
-    }
+  const refreshPreview = () => {
+    setPreviewImage("/placeholder.webp");
+    setTimeout(() => {
+      setPreviewImage(previewImage1)
+    }, 50)
   };
 
   const finalizeCameraAddition = async () => {
-    const newCamera = {
-      id: Date.now(),
-      cameraName: formData.cameraName,
-      ip: formData.ip,
-      videoLink: formData.videoLink,
-      safeArea: formData.needSafeArea ? box : null,
-    };
-
-    
-    if (formData.needSafeArea && box) {
+    if (formData.needSafeArea && normalizedBox) {
       setIsLoading(true);
       try {
         const payload = {
           cameraName: formData.cameraName,
           ip: formData.ip,
           videoLink: formData.videoLink,
-          safeArea: box,
+          safeArea: normalizedBox, // Using normalized coordinates (0-1)
         };
         const res = await fetch(`${API_LINK}/user/v1/admin/create/camera`, {
           method: "POST",
@@ -150,8 +168,24 @@ export default function CameraManagement() {
         });
         if (!res.ok) {
           toast.error("Failed to save camera data");
+        } else {
+          toast.success("Camera added successfully");
+          // Refresh camera list
+          try {
+            const res = await fetch(`${API_LINK}/user/v1/admin/get/cameras/all`, {
+              method: "GET",
+              headers: {
+                "Content-Type": "application/json",
+                "ngrok-skip-browser-warning": "true",
+              },
+              credentials: "include",
+            });
+            const data = await res.json();
+            setCameras(data.data.cameras);
+          } catch (err) {
+            console.log(err);
+          }
         }
-
         setIsLoading(false);
       } catch (error) {
         console.error("Error saving camera with safe area:", error);
@@ -178,6 +212,23 @@ export default function CameraManagement() {
         });
         if (!res.ok) {
           toast.error("Failed to save camera data");
+        } else {
+          toast.success("Camera added successfully");
+          // Refresh camera list
+          try {
+            const res = await fetch(`${API_LINK}/user/v1/admin/get/cameras/all`, {
+              method: "GET",
+              headers: {
+                "Content-Type": "application/json",
+                "ngrok-skip-browser-warning": "true",
+              },
+              credentials: "include",
+            });
+            const data = await res.json();
+            setCameras(data.data.cameras);
+          } catch (err) {
+            console.log(err);
+          }
         }
       } catch (error) {
         console.error("Error saving camera:", error);
@@ -186,10 +237,6 @@ export default function CameraManagement() {
       }
     }
 
-
-    console.log("Added camera:", newCamera);
-
-  
     setFormData({
       cameraName: "",
       ip: "",
@@ -198,6 +245,7 @@ export default function CameraManagement() {
       safeArea: null,
     });
     setBox(null);
+    setNormalizedBox(null);
     setShowForm(false);
     setCurrentStep(1);
   };
@@ -212,6 +260,7 @@ export default function CameraManagement() {
       safeArea: null,
     });
     setBox(null);
+    setNormalizedBox(null);
     setShowForm(false);
     setCurrentStep(1);
   };
@@ -220,14 +269,13 @@ export default function CameraManagement() {
   const handleImageClick = (e) => {
     // don't create if we're resizing
     if (isResizing) return;
-    // only create if there's no box yet or replace existing
 
     // only create when clicking the image itself, not the box or handles
     if (e.target !== imgRef.current) return;
 
     const rect = imgRef.current.getBoundingClientRect();
-    const scaleX = imgRef.current.width / rect.width;
-    const scaleY = imgRef.current.height / rect.height;
+    const scaleX = imgRef.current.naturalWidth / rect.width;
+    const scaleY = imgRef.current.naturalHeight / rect.height;
 
     const x = (e.clientX - rect.left) * scaleX;
     const y = (e.clientY - rect.top) * scaleY;
@@ -253,8 +301,8 @@ export default function CameraManagement() {
     if (!isResizing || !box || !resizeHandle || !imgRef.current) return;
 
     const rect = imgRef.current.getBoundingClientRect();
-    const scaleX = imgRef.current.width / rect.width;
-    const scaleY = imgRef.current.height / rect.height;
+    const scaleX = imgRef.current.naturalWidth / rect.width;
+    const scaleY = imgRef.current.naturalHeight / rect.height;
 
     const deltaX = (e.clientX - startPos.x) * scaleX;
     const deltaY = (e.clientY - startPos.y) * scaleY;
@@ -300,8 +348,8 @@ export default function CameraManagement() {
 
     // Keep within image bounds
     if (imgRef.current) {
-      const maxX = imgRef.current.width - newBox.width;
-      const maxY = imgRef.current.height - newBox.height;
+      const maxX = imgRef.current.naturalWidth - newBox.width;
+      const maxY = imgRef.current.naturalHeight - newBox.height;
       newBox.x = Math.min(Math.max(0, newBox.x), maxX);
       newBox.y = Math.min(Math.max(0, newBox.y), maxY);
     }
@@ -320,6 +368,7 @@ export default function CameraManagement() {
   const deleteBox = (e) => {
     e.stopPropagation();
     setBox(null);
+    setNormalizedBox(null);
   };
 
   // Event listener setup for resizing
@@ -336,8 +385,27 @@ export default function CameraManagement() {
   }, [isResizing, box, resizeHandle, startPos]);
 
   // Delete camera handler
-  const deleteCamera = (id) => {
-    setCameras(cameras.filter((camera) => camera.id !== id));
+  const deleteCamera = async (id) => {
+    try {
+      const res = await fetch(`${API_LINK}/user/v1/admin/delete/camera/${id}`, {
+        method: "DELETE",
+        headers: {
+          "Content-Type": "application/json",
+          "ngrok-skip-browser-warning": "true",
+        },
+        credentials: "include",
+      });
+      
+      if (res.ok) {
+        toast.success("Camera deleted successfully");
+        setCameras(cameras.filter((camera) => camera.cameraId !== id));
+      } else {
+        toast.error("Failed to delete camera");
+      }
+    } catch (error) {
+      console.error("Error deleting camera:", error);
+      toast.error("Error deleting camera");
+    }
   };
 
   const renderForm = () => {
@@ -409,7 +477,10 @@ export default function CameraManagement() {
 
               <div className="pt-4 flex justify-between">
                 <button
-                  onClick={cancelForm}
+                  onClick={() => {
+                    cancelForm();
+                    setShow(true);
+                  }}
                   className="px-6 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition"
                 >
                   Cancel
@@ -524,10 +595,10 @@ export default function CameraManagement() {
                       <div
                         className="absolute border-2 border-red-500 bg-red-500/20"
                         style={{
-                          left: `${box.x}px`,
-                          top: `${box.y}px`,
-                          width: `${box.width}px`,
-                          height: `${box.height}px`,
+                          left: `${(box.x / imgRef.current?.naturalWidth || 1) * 100}%`,
+                          top: `${(box.y / imgRef.current?.naturalHeight || 1) * 100}%`,
+                          width: `${(box.width / imgRef.current?.naturalWidth || 1) * 100}%`,
+                          height: `${(box.height / imgRef.current?.naturalHeight || 1) * 100}%`,
                         }}
                       >
                         <button
@@ -541,7 +612,7 @@ export default function CameraManagement() {
                           (handle) => (
                             <div
                               key={handle}
-                              className={`absolute bg-white border border-red-500`}
+                              className="absolute bg-white border border-red-500"
                               style={{
                                 width: "8px",
                                 height: "8px",
@@ -557,6 +628,27 @@ export default function CameraManagement() {
                   </div>
                 )}
               </div>
+
+              {/* Display normalized coordinates */}
+              {normalizedBox && (
+                <div className="bg-gray-100 p-4 rounded-lg">
+                  <h3 className="text-sm font-medium text-gray-700 mb-2">Normalized Coordinates (0-1 for OpenCV):</h3>
+                  <div className="grid grid-cols-2 gap-4 text-sm">
+                    <div>
+                      <span className="font-medium">X:</span> {normalizedBox.x.toFixed(3)}
+                    </div>
+                    <div>
+                      <span className="font-medium">Y:</span> {normalizedBox.y.toFixed(3)}
+                    </div>
+                    <div>
+                      <span className="font-medium">Width:</span> {normalizedBox.width.toFixed(3)}
+                    </div>
+                    <div>
+                      <span className="font-medium">Height:</span> {normalizedBox.height.toFixed(3)}
+                    </div>
+                  </div>
+                </div>
+              )}
 
               <div className="flex justify-end">
                 <button
@@ -634,16 +726,18 @@ export default function CameraManagement() {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br w-screen from-indigo-50 to-purple-50 py-12">
-      <div className="max-w-5xl mx-auto">
-        <div className="mb-8 text-center">
-          <h1 className="text-3xl font-bold text-gray-800">
-            Camera Management System
-          </h1>
-          <p className="text-gray-600 mt-2">
-            Add and manage your surveillance cameras
-          </p>
-        </div>
+    <div className="min-h-screen w-[1450px] bg-gradient-to-br  from-indigo-50 to-purple-50 py-12">
+      <div className="max-w-4xl mx-auto">
+        {show && (
+          <div className="mb-8 text-center">
+            <h1 className="text-3xl font-bold text-gray-800">
+              Camera Management System
+            </h1>
+            <p className="text-gray-600 mt-2">
+              Add and manage your surveillance cameras
+            </p>
+          </div>
+        )}
 
         {!showForm ? (
           <div className="bg-white w-full rounded-2xl shadow-lg p-6">
@@ -652,7 +746,10 @@ export default function CameraManagement() {
                 Your Cameras
               </h2>
               <button
-                onClick={() => setShowForm(true)}
+                onClick={() => {
+                  setShowForm(true);
+                  setShow(false);
+                }}
                 className="px-4 py-2 bg-gradient-to-r from-purple-600 to-indigo-600 text-white rounded-lg font-medium hover:from-purple-700 hover:to-indigo-700 transition shadow-md flex items-center"
               >
                 <svg
@@ -676,39 +773,53 @@ export default function CameraManagement() {
                 {cameras.map((camera) => (
                   <div
                     key={camera.cameraId}
-                    className="border border-gray-200 rounded-lg p-4 hover:shadow-md transition"
+                    className="border border-gray-200 rounded-lg p-4 hover:shadow-md transition-all duration-200 bg-white group"
                   >
-                    <div className="flex justify-between">
-                      <h3 className="font-medium text-gray-800">
-                        {camera.cameraName}
-                      </h3>
+                    <div className="flex justify-between items-start">
+                      <div className="flex items-center gap-2">
+                        <Video className="h-5 w-5 text-blue-500" />
+                        <h3 className="font-medium text-gray-800 truncate max-w-xs">
+                          {camera.cameraName}
+                        </h3>
+                      </div>
                       <button
-                        onClick={() => deleteCamera(camera.id)}
-                        className="text-red-500 hover:text-red-700"
+                        onClick={() => deleteCamera(camera.cameraId)}
+                        className="text-gray-400 hover:text-red-500 transition-colors p-1 -mr-1 opacity-0 group-hover:opacity-100"
+                        aria-label="Delete camera"
                       >
-                        <svg
-                          xmlns="http://www.w3.org/2000/svg"
-                          className="h-5 w-5"
-                          viewBox="0 0 20 20"
-                          fill="currentColor"
-                        >
-                          <path
-                            fillRule="evenodd"
-                            d="M9 2a1 1 0 00-.894.553L7.382 4H4a1 1 0 000 2v10a2 2 0 002 2h8a2 2 0 002-2V6a1 1 0 100-2h-3.382l-.724-1.447A1 1 0 0011 2H9zM7 8a1 1 0 012 0v6a1 1 0 11-2 0V8zm5-1a1 1 0 00-1 1v6a1 1 0 102 0V8a1 1 0 00-1-1z"
-                            clipRule="evenodd"
-                          />
-                        </svg>
+                        <Trash2 className="h-4 w-4" />
                       </button>
                     </div>
-                    <p className="text-sm text-gray-600 mt-1">
-                      IP: {camera.ip}
-                    </p>
-                    <p className="text-sm text-gray-600">
-                      Video Link: {camera.videoLink}
-                    </p>
-                    <p className="text-sm text-gray-600">
-                      Safe Area: {camera.safeArea ? "Defined" : "Not defined"}
-                    </p>
+
+                    <div className="mt-3 space-y-2">
+                      <div className="flex items-center gap-2 text-sm text-gray-600">
+                        <Network className="h-4 w-4 text-gray-400" />
+                        <span>IP: {camera.ip}</span>
+                      </div>
+
+                      <div className="flex items-start gap-2 text-sm text-gray-600">
+                        <Link2 className="h-4 w-4 text-gray-400 mt-0.5 flex-shrink-0" />
+                        <span className="truncate">
+                          Video Link: {camera.videoLink}
+                        </span>
+                      </div>
+
+                      <div className="flex items-center gap-2 text-sm text-gray-600">
+                        <MapPin className="h-4 w-4 text-gray-400" />
+                        <span>
+                          Safe Area:{" "}
+                          {camera.safeArea ? (
+                            <span className="text-green-600 flex items-center gap-1">
+                              <CheckCircle className="h-4 w-4" /> Defined
+                            </span>
+                          ) : (
+                            <span className="text-amber-600 flex items-center gap-1">
+                              <XCircle className="h-4 w-4" /> Not defined
+                            </span>
+                          )}
+                        </span>
+                      </div>
+                    </div>
                   </div>
                 ))}
               </div>
@@ -742,7 +853,7 @@ export default function CameraManagement() {
             )}
           </div>
         ) : (
-          <div className="w-full max-w-lg mx-auto">{renderForm()}</div>
+          <div className="w-full max-w-5xl mx-auto">{renderForm()}</div>
         )}
       </div>
     </div>

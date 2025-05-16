@@ -58,8 +58,8 @@ export default function Chatbot() {
   };
 
   return (
-    <div className="flex justify-center items-center min-h-screen bg-gradient-to-br from-indigo-50 to-blue-50 p-4">
-      <div className="w-full max-w-6xl mx-auto"> {/* 3/4 of typical screen width */}
+    <div className="flex justify-center w-[1450px] items-center min-h-screen bg-gradient-to-br from-indigo-50 to-blue-50 p-4">
+      <div className="w-full max-w-6xl mx-auto">
         <div className="bg-white rounded-2xl shadow-xl overflow-hidden border border-gray-100">
           {/* Header */}
           <div className="bg-gradient-to-r from-indigo-600 to-blue-500 p-6 text-white">
