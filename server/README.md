@@ -1,6 +1,6 @@
-# ReachBluelineBackEnd
+# TECHgium
 
-Backend for ReachBlueline developed with express JS and Mongo DB
+Backend for TECHgium developed with express JS and Mongo DB
 
 ## Run Locally
 ### 1. Add your .env configs
